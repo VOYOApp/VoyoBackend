@@ -14,7 +14,9 @@ func main() {
 	//	AllowHeaders: "Content-Type",
 	//}))
 
-	app.Get("/", myfunction)
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Hello, World!")
+	})
 
 	app.Get("/status", func(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusOK)
