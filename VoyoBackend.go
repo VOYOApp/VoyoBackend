@@ -56,6 +56,9 @@ func main() {
 		return c.SendString("1.0.0")
 	})
 
+	app.Post("/otp", sendOTP)
+	app.Post("/verifyOTP", verifyOTP)
+
 	err := app.Listen(":3000")
 	if err != nil {
 		fmt.Println(err)
