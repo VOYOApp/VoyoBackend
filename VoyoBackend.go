@@ -11,6 +11,15 @@ import (
 
 var db *sql.DB
 
+// EXAMPLE database := "postgresql://username:password@localhost:5432/database"
+//const (
+//	host     = "gigondas"
+//	port     = 5432
+//	user     = "graillet"
+//	password = "graillet"
+//	dbname   = "voyo_db"
+//)
+
 func init() {
 	err := godotenv.Load()
 
@@ -59,6 +68,56 @@ func main() {
 	app.Post("/otp", sendOTP)
 	app.Post("/verifyOTP", verifyOTP)
 
+	// Routes pour la table "Bien"
+	app.Get("/biens/:id", GetBien)
+	app.Get("/biens", GetAllBien)
+	app.Post("/biens", CreateBien)
+	app.Put("/biens/:id", UpdateBien)
+	app.Delete("/biens/:id", DeleteBien)
+
+	// Routes pour la table "Role"
+	app.Get("/roles/:id", GetRole)
+	app.Get("/roles", GetAllRoles)
+	app.Post("/roles", CreateRole)
+	app.Put("/roles/:id", UpdateRole)
+	app.Delete("/roles/:id", DeleteRole)
+
+	// Routes pour la table "Lieux"
+	app.Get("/lieux/:id", GetLieux)
+	app.Get("/lieux", GetAllLieux)
+	app.Post("/lieux", CreateLieux)
+	app.Put("/lieux/:id", UpdateLieux)
+	app.Delete("/lieux/:id", DeleteLieux)
+
+	// Routes pour la table "Utilisateur"
+	app.Get("/utilisateurs/:id", GetUtilisateur)
+	app.Get("/utilisateurs", GetAllUtilisateurs)
+	app.Post("/utilisateurs", CreateUtilisateur)
+	app.Put("/utilisateurs/:id", UpdateUtilisateur)
+	app.Delete("/utilisateurs/:id", DeleteUtilisateur)
+
+	// Routes pour la table "Calendrier"
+	app.Get("/calendriers/:id", GetCalendrier)
+	app.Get("/calendriers", GetAllCalendriers)
+	app.Post("/calendriers", CreateCalendrier)
+	app.Put("/calendriers/:id", UpdateCalendrier)
+	app.Delete("/calendriers/:id", DeleteCalendrier)
+
+	// Routes pour la table "Visite"
+	app.Get("/visites/:idUtilisateur/:idUtilisateur1/:idBien", GetVisite)
+	app.Get("/visites", GetAllVisites)
+	app.Post("/visites", CreateVisite)
+	app.Put("/visites/:idUtilisateur/:idUtilisateur1/:idBien", UpdateVisite)
+	app.Delete("/visites/:idUtilisateur/:idUtilisateur1/:idBien", DeleteVisite)
+
+	// Routes pour la table "Travail"
+	app.Get("/travaux/:idUtilisateur/:idLieux", GetTravail)
+	app.Get("/travaux", GetAllTravaux)
+	app.Post("/travaux", CreateTravail)
+	app.Put("/travaux/:idUtilisateur/:idLieux", UpdateTravail)
+	app.Delete("/travaux/:idUtilisateur/:idLieux", DeleteTravail)
+
+	fmt.Printf("Server is running on :%d...\n", 3000)
 	err := app.Listen(":3000")
 	if err != nil {
 		fmt.Println(err)
