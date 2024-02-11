@@ -3,19 +3,27 @@ package main
 import "github.com/gofiber/fiber/v2"
 
 func GetRole(c *fiber.Ctx) error {
-	id := c.Params("id")
-	var r Role
+	id := c.Query("id")
 
-	row := db.QueryRow("SELECT * FROM Role WHERE IdRole = $1", id)
-	err := row.Scan(&r.IdRole, &r.Libelle)
-	if err != nil {
-		return err
+	// Si un ID est spécifié dans les paramètres de la requête,
+	// on récupère uniquement ce rôle spécifique.
+	if id != "" {
+		var r Role
+		stmt, err := db.Prepare("SELECT * FROM Role WHERE IdRole = $1")
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+
+		row := stmt.QueryRow(id)
+		err = row.Scan(&r.IdRole, &r.Libelle)
+		if err != nil {
+			return err
+		}
+		return c.JSON(r)
 	}
 
-	return c.JSON(r)
-}
-
-func GetAllRoles(c *fiber.Ctx) error {
+	// Si aucun ID n'est spécifié, on récupère tous les rôles.
 	rows, err := db.Query("SELECT * FROM Role")
 	if err != nil {
 		return err

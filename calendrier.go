@@ -3,19 +3,27 @@ package main
 import "github.com/gofiber/fiber/v2"
 
 func GetCalendrier(c *fiber.Ctx) error {
-	id := c.Params("id")
-	var cal Calendrier
+	id := c.Query("id")
 
-	row := db.QueryRow("SELECT * FROM Calendrier WHERE IdCalendrier = $1", id)
-	err := row.Scan(&cal.IdCalendrier, &cal.IdUtilisateur, &cal.Disponibilite, &cal.Temps)
-	if err != nil {
-		return err
+	// Si un ID est spécifié dans les paramètres de la requête,
+	// on récupère uniquement ce calendrier spécifique.
+	if id != "" {
+		var cal Calendrier
+		stmt, err := db.Prepare("SELECT * FROM Calendrier WHERE IdCalendrier = $1")
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+
+		row := stmt.QueryRow(id)
+		err = row.Scan(&cal.IdCalendrier, &cal.IdUtilisateur, &cal.Disponibilite, &cal.Temps)
+		if err != nil {
+			return err
+		}
+		return c.JSON(cal)
 	}
 
-	return c.JSON(cal)
-}
-
-func GetAllCalendriers(c *fiber.Ctx) error {
+	// Si aucun ID n'est spécifié, on récupère tous les calendriers.
 	rows, err := db.Query("SELECT * FROM Calendrier")
 	if err != nil {
 		return err

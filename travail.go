@@ -3,20 +3,28 @@ package main
 import "github.com/gofiber/fiber/v2"
 
 func GetTravail(c *fiber.Ctx) error {
-	idUtilisateur := c.Params("idUtilisateur")
-	idLieux := c.Params("idLieux")
-	var t Travail
+	idUtilisateur := c.Query("idUtilisateur")
+	idLieux := c.Query("idLieux")
 
-	row := db.QueryRow("SELECT * FROM Travail WHERE idUtilisateur = $1 AND idLieux = $2", idUtilisateur, idLieux)
-	err := row.Scan(&t.IdUtilisateur, &t.IdLieux)
-	if err != nil {
-		return err
+	// Si les IDs d'utilisateur et de lieu sont spécifiés dans les paramètres de la requête,
+	// on récupère uniquement ce travail spécifique.
+	if idUtilisateur != "" && idLieux != "" {
+		var t Travail
+		stmt, err := db.Prepare("SELECT * FROM Travail WHERE idUtilisateur = $1 AND idLieux = $2")
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+
+		row := stmt.QueryRow(idUtilisateur, idLieux)
+		err = row.Scan(&t.IdUtilisateur, &t.IdLieux)
+		if err != nil {
+			return err
+		}
+		return c.JSON(t)
 	}
 
-	return c.JSON(t)
-}
-
-func GetAllTravaux(c *fiber.Ctx) error {
+	// Si les IDs d'utilisateur et de lieu ne sont pas spécifiés, on récupère tous les travaux.
 	rows, err := db.Query("SELECT * FROM Travail")
 	if err != nil {
 		return err

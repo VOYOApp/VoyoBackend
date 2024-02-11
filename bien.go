@@ -5,19 +5,27 @@ import (
 )
 
 func GetBien(c *fiber.Ctx) error {
-	id := c.Params("id")
-	var b Bien
+	id := c.Query("id")
 
-	row := db.QueryRow("SELECT * FROM Bien WHERE IdBien = $1", id)
-	err := row.Scan(&b.IdBien, &b.CodePostal, &b.Ville, &b.Adresse, &b.Proprietaire, &b.Pays)
-	if err != nil {
-		return err
+	// Si un ID est spécifié dans les paramètres de la requête,
+	// on récupère uniquement ce bien spécifique.
+	if id != "" {
+		var b Bien
+		stmt, err := db.Prepare("SELECT * FROM Bien WHERE IdBien = $1")
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+
+		row := stmt.QueryRow(id)
+		err = row.Scan(&b.IdBien, &b.CodePostal, &b.Ville, &b.Adresse, &b.Proprietaire, &b.Pays)
+		if err != nil {
+			return err
+		}
+		return c.JSON(b)
 	}
 
-	return c.JSON(b)
-}
-
-func GetAllBien(c *fiber.Ctx) error {
+	// Si aucun ID n'est spécifié, on récupère tous les biens.
 	rows, err := db.Query("SELECT * FROM Bien")
 	if err != nil {
 		return err

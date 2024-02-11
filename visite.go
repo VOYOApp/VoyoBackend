@@ -3,21 +3,29 @@ package main
 import "github.com/gofiber/fiber/v2"
 
 func GetVisite(c *fiber.Ctx) error {
-	idUtilisateur := c.Params("idUtilisateur")
-	idUtilisateur1 := c.Params("idUtilisateur1")
-	idBien := c.Params("idBien")
-	var v Visite
+	idUtilisateur := c.Query("idUtilisateur")
+	idUtilisateur1 := c.Query("idUtilisateur1")
+	idBien := c.Query("idBien")
 
-	row := db.QueryRow("SELECT * FROM Visite WHERE idUtilisateur = $1 AND idUtilisateur_1 = $2 AND idBien = $3", idUtilisateur, idUtilisateur1, idBien)
-	err := row.Scan(&v.IdUtilisateur, &v.IdUtilisateur1, &v.IdBien, &v.Agence, &v.CodeVerification, &v.Horaire, &v.APayer, &v.Etat)
-	if err != nil {
-		return err
+	// Si tous les IDs d'utilisateur et de bien sont spécifiés dans les paramètres de la requête,
+	// on récupère uniquement cette visite spécifique.
+	if idUtilisateur != "" && idUtilisateur1 != "" && idBien != "" {
+		var v Visite
+		stmt, err := db.Prepare("SELECT * FROM Visite WHERE idUtilisateur = $1 AND idUtilisateur_1 = $2 AND idBien = $3")
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+
+		row := stmt.QueryRow(idUtilisateur, idUtilisateur1, idBien)
+		err = row.Scan(&v.IdUtilisateur, &v.IdUtilisateur1, &v.IdBien, &v.Agence, &v.CodeVerification, &v.Horaire, &v.APayer, &v.Etat)
+		if err != nil {
+			return err
+		}
+		return c.JSON(v)
 	}
 
-	return c.JSON(v)
-}
-
-func GetAllVisites(c *fiber.Ctx) error {
+	// Si tous les IDs d'utilisateur et de bien ne sont pas spécifiés, on récupère toutes les visites.
 	rows, err := db.Query("SELECT * FROM Visite")
 	if err != nil {
 		return err

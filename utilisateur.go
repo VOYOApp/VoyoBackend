@@ -3,19 +3,27 @@ package main
 import "github.com/gofiber/fiber/v2"
 
 func GetUtilisateur(c *fiber.Ctx) error {
-	id := c.Params("id")
-	var u Utilisateur
+	id := c.Query("id")
 
-	row := db.QueryRow("SELECT * FROM Utilisateur WHERE IdUtilisateur = $1", id)
-	err := row.Scan(&u.IdUtilisateur, &u.FirstName, &u.LastName, &u.Email, &u.Adresse, &u.Ville, &u.CodePostal, &u.Tel, &u.Note, &u.Description, &u.Password, &u.IdRole)
-	if err != nil {
-		return err
+	// Si un ID est spécifié dans les paramètres de la requête,
+	// on récupère uniquement cet utilisateur spécifique.
+	if id != "" {
+		var u Utilisateur
+		stmt, err := db.Prepare("SELECT * FROM Utilisateur WHERE IdUtilisateur = $1")
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+
+		row := stmt.QueryRow(id)
+		err = row.Scan(&u.IdUtilisateur, &u.FirstName, &u.LastName, &u.Email, &u.Adresse, &u.Ville, &u.CodePostal, &u.Tel, &u.Note, &u.Description, &u.Password, &u.IdRole)
+		if err != nil {
+			return err
+		}
+		return c.JSON(u)
 	}
 
-	return c.JSON(u)
-}
-
-func GetAllUtilisateurs(c *fiber.Ctx) error {
+	// Si aucun ID n'est spécifié, on récupère tous les utilisateurs.
 	rows, err := db.Query("SELECT * FROM Utilisateur")
 	if err != nil {
 		return err
@@ -33,6 +41,7 @@ func GetAllUtilisateurs(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(utilisateurs)
+
 }
 
 func CreateUtilisateur(c *fiber.Ctx) error {
