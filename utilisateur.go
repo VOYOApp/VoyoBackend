@@ -1,12 +1,13 @@
 package main
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"github.com/gofiber/fiber/v2"
+)
 
 func GetUtilisateur(c *fiber.Ctx) error {
 	id := c.Query("id")
 
-	// Si un ID est spécifié dans les paramètres de la requête,
-	// on récupère uniquement cet utilisateur spécifique.
+	// Si un ID est spécifié dans les paramètres de la requête, on récupère uniquement cet utilisateur spécifique.
 	if id != "" {
 		var u Utilisateur
 		stmt, err := db.Prepare("SELECT * FROM Utilisateur WHERE IdUtilisateur = $1")

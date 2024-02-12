@@ -1,6 +1,10 @@
 package main
 
-import "time"
+import (
+	"time"
+)
+
+//omitempty permet de ne pas afficher le champs dans le json s'il est nil
 
 type User struct {
 	ID    int    `json:"id"`
@@ -41,18 +45,18 @@ type Lieux struct {
 }
 
 type Utilisateur struct {
-	IdUtilisateur int     `json:"id"`
-	FirstName     string  `json:"first_name"`
-	LastName      string  `json:"last_name"`
-	Email         string  `json:"email"`
-	Adresse       string  `json:"address"`
-	Ville         string  `json:"city"`
-	CodePostal    int     `json:"postal_code"`
-	Tel           string  `json:"tel"`
-	Note          float64 `json:"note"`
-	Description   string  `json:"description"`
-	Password      string  `json:"password"`
-	IdRole        int     `json:"role_id"`
+	IdUtilisateur int      `json:"id"`
+	FirstName     string   `json:"first_name"`
+	LastName      string   `json:"last_name"`
+	Email         string   `json:"email"`
+	Adresse       string   `json:"address"`
+	Ville         string   `json:"city"`
+	CodePostal    int      `json:"postal_code"`
+	Tel           string   `json:"tel"`
+	Note          *float64 `json:"note"`
+	Description   string   `json:"description"`
+	Password      string   `json:"password"`
+	IdRole        int      `json:"role_id"`
 }
 
 type Calendrier struct {
