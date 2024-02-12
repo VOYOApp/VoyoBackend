@@ -71,44 +71,44 @@ func main() {
 	// Routes pour la table "Bien"
 	app.Get("/biens", GetBien)
 	app.Post("/biens", CreateBien)
-	app.Put("/biens/:id", UpdateBien)
-	app.Delete("/biens/:id", DeleteBien)
+	app.Put("/biens", UpdateBien)
+	app.Delete("/biens", DeleteBien)
 
 	// Routes pour la table "Role"
 	app.Get("/roles", GetRole)
 	app.Post("/roles", CreateRole)
-	app.Put("/roles/:id", UpdateRole)
-	app.Delete("/roles/:id", DeleteRole)
+	app.Put("/roles", UpdateRole)
+	app.Delete("/roles", DeleteRole)
 
 	// Routes pour la table "Lieux"
 	app.Get("/lieux", GetLieux)
 	app.Post("/lieux", CreateLieux)
-	app.Put("/lieux/:id", UpdateLieux)
-	app.Delete("/lieux/:id", DeleteLieux)
+	app.Put("/lieux", UpdateLieux)
+	app.Delete("/lieux", DeleteLieux)
 
 	// Routes pour la table "Utilisateur"
 	app.Get("/utilisateurs", GetUtilisateur)
 	app.Post("/utilisateurs", CreateUtilisateur)
-	app.Put("/utilisateurs/:id", UpdateUtilisateur)
-	app.Delete("/utilisateurs/:id", DeleteUtilisateur)
+	app.Put("/utilisateurs", UpdateUtilisateur)
+	app.Delete("/utilisateurs", DeleteUtilisateur)
 
 	// Routes pour la table "Calendrier"
 	app.Get("/calendriers", GetCalendrier)
 	app.Post("/calendriers", CreateCalendrier)
-	app.Put("/calendriers/:id", UpdateCalendrier)
-	app.Delete("/calendriers/:id", DeleteCalendrier)
+	app.Put("/calendriers", UpdateCalendrier)
+	app.Delete("/calendriers", DeleteCalendrier)
 
 	// Routes pour la table "Visite"
 	app.Get("/visites", GetVisite)
 	app.Post("/visites", CreateVisite)
-	app.Put("/visites/:idUtilisateur/:idUtilisateur1/:idBien", UpdateVisite)
-	app.Delete("/visites/:idUtilisateur/:idUtilisateur1/:idBien", DeleteVisite)
+	app.Put("/visites", UpdateVisite)
+	app.Delete("/visites", DeleteVisite)
 
 	// Routes pour la table "Travail"
 	app.Get("/travaux", GetTravail)
 	app.Post("/travaux", CreateTravail)
-	app.Put("/travaux/:idUtilisateur/:idLieux", UpdateTravail)
-	app.Delete("/travaux/:idUtilisateur/:idLieux", DeleteTravail)
+	app.Put("/travaux", UpdateTravail)
+	app.Delete("/travaux", DeleteTravail)
 
 	fmt.Printf("Server is running on :%d...\n", 3000)
 	err := app.Listen(":3000")

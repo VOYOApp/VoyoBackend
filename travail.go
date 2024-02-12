@@ -65,8 +65,8 @@ func CreateTravail(c *fiber.Ctx) error {
 }
 
 func UpdateTravail(c *fiber.Ctx) error {
-	idUtilisateur := c.Params("idUtilisateur")
-	idLieux := c.Params("idLieux")
+	idUtilisateur := c.Query("idUtilisateur")
+	idLieux := c.Query("idLieux")
 	var t Travail
 	if err := c.BodyParser(&t); err != nil {
 		return err
@@ -87,8 +87,8 @@ func UpdateTravail(c *fiber.Ctx) error {
 }
 
 func DeleteTravail(c *fiber.Ctx) error {
-	idUtilisateur := c.Params("idUtilisateur")
-	idLieux := c.Params("idLieux")
+	idUtilisateur := c.Query("idUtilisateur")
+	idLieux := c.Query("idLieux")
 
 	stmt, err := db.Prepare("DELETE FROM Travail WHERE idUtilisateur=$1 AND idLieux=$2")
 	if err != nil {

@@ -7,8 +7,7 @@ import (
 func GetBien(c *fiber.Ctx) error {
 	id := c.Query("id")
 
-	// Si un ID est spécifié dans les paramètres de la requête,
-	// on récupère uniquement ce bien spécifique.
+	// Si un ID est spécifié dans les paramètres de la requête,on récupère uniquement ce bien spécifique.
 	if id != "" {
 		var b Bien
 		stmt, err := db.Prepare("SELECT * FROM Bien WHERE IdBien = $1")
@@ -66,7 +65,7 @@ func CreateBien(c *fiber.Ctx) error {
 }
 
 func UpdateBien(c *fiber.Ctx) error {
-	id := c.Params("id")
+	id := c.Query("id")
 	var b Bien
 	if err := c.BodyParser(&b); err != nil {
 		return err
@@ -87,7 +86,7 @@ func UpdateBien(c *fiber.Ctx) error {
 }
 
 func DeleteBien(c *fiber.Ctx) error {
-	id := c.Params("id")
+	id := c.Query("id")
 
 	stmt, err := db.Prepare("DELETE FROM Bien WHERE IdBien=$1")
 	if err != nil {

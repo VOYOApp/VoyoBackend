@@ -65,7 +65,7 @@ func CreateUtilisateur(c *fiber.Ctx) error {
 }
 
 func UpdateUtilisateur(c *fiber.Ctx) error {
-	id := c.Params("id")
+	id := c.Query("id")
 	var u Utilisateur
 	if err := c.BodyParser(&u); err != nil {
 		return err
@@ -86,7 +86,7 @@ func UpdateUtilisateur(c *fiber.Ctx) error {
 }
 
 func DeleteUtilisateur(c *fiber.Ctx) error {
-	id := c.Params("id")
+	id := c.Query("id")
 
 	stmt, err := db.Prepare("DELETE FROM Utilisateur WHERE IdUtilisateur=$1")
 	if err != nil {

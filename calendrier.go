@@ -64,7 +64,7 @@ func CreateCalendrier(c *fiber.Ctx) error {
 }
 
 func UpdateCalendrier(c *fiber.Ctx) error {
-	id := c.Params("id")
+	id := c.Query("id")
 	var cal Calendrier
 	if err := c.BodyParser(&cal); err != nil {
 		return err
@@ -85,7 +85,7 @@ func UpdateCalendrier(c *fiber.Ctx) error {
 }
 
 func DeleteCalendrier(c *fiber.Ctx) error {
-	id := c.Params("id")
+	id := c.Query("id")
 
 	stmt, err := db.Prepare("DELETE FROM Calendrier WHERE IdCalendrier=$1")
 	if err != nil {

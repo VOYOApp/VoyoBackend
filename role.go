@@ -64,7 +64,7 @@ func CreateRole(c *fiber.Ctx) error {
 }
 
 func UpdateRole(c *fiber.Ctx) error {
-	id := c.Params("id")
+	id := c.Query("id")
 	var r Role
 	if err := c.BodyParser(&r); err != nil {
 		return err
@@ -85,7 +85,7 @@ func UpdateRole(c *fiber.Ctx) error {
 }
 
 func DeleteRole(c *fiber.Ctx) error {
-	id := c.Params("id")
+	id := c.Query("id")
 
 	stmt, err := db.Prepare("DELETE FROM Role WHERE IdRole=$1")
 	if err != nil {

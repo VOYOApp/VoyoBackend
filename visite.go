@@ -66,9 +66,9 @@ func CreateVisite(c *fiber.Ctx) error {
 }
 
 func UpdateVisite(c *fiber.Ctx) error {
-	idUtilisateur := c.Params("idUtilisateur")
-	idUtilisateur1 := c.Params("idUtilisateur1")
-	idBien := c.Params("idBien")
+	idUtilisateur := c.Query("idUtilisateur")
+	idUtilisateur1 := c.Query("idUtilisateur1")
+	idBien := c.Query("idBien")
 	var v Visite
 	if err := c.BodyParser(&v); err != nil {
 		return err
@@ -89,9 +89,9 @@ func UpdateVisite(c *fiber.Ctx) error {
 }
 
 func DeleteVisite(c *fiber.Ctx) error {
-	idUtilisateur := c.Params("idUtilisateur")
-	idUtilisateur1 := c.Params("idUtilisateur1")
-	idBien := c.Params("idBien")
+	idUtilisateur := c.Query("idUtilisateur")
+	idUtilisateur1 := c.Query("idUtilisateur1")
+	idBien := c.Query("idBien")
 
 	stmt, err := db.Prepare("DELETE FROM Visite WHERE idUtilisateur=$1 AND idUtilisateur_1=$2 AND idBien=$3")
 	if err != nil {

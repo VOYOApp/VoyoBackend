@@ -64,7 +64,7 @@ func CreateLieux(c *fiber.Ctx) error {
 }
 
 func UpdateLieux(c *fiber.Ctx) error {
-	id := c.Params("id")
+	id := c.Query("id")
 	var l Lieux
 	if err := c.BodyParser(&l); err != nil {
 		return err
@@ -85,7 +85,7 @@ func UpdateLieux(c *fiber.Ctx) error {
 }
 
 func DeleteLieux(c *fiber.Ctx) error {
-	id := c.Params("id")
+	id := c.Query("id")
 
 	stmt, err := db.Prepare("DELETE FROM Lieux WHERE IdLieux=$1")
 	if err != nil {
