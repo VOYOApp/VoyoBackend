@@ -71,10 +71,10 @@ func main() {
 	app.Delete("/realestate", DeleteRealEstate)
 
 	// Routes pour la table "TypeRealeState"
-	app.Get("/realestate", GetTypeRealEstate)
-	app.Post("/realestate", CreateTypeRealEstate)
-	app.Put("/realestate", UpdateTypeRealEstate)
-	app.Delete("/realestate", DeleteTypeRealEstate)
+	app.Get("/typerealestate", GetTypeRealEstate)
+	app.Post("/typerealestate", CreateTypeRealEstate)
+	app.Put("/typerealestate", UpdateTypeRealEstate)
+	app.Delete("/typerealestate", DeleteTypeRealEstate)
 
 	// Routes pour la table "Availability"
 	app.Get("/availability", GetAvailability)

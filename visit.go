@@ -26,20 +26,49 @@ func CreateVisit(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).SendString("Visite créée avec succès")
 }
 
-// GetVisit récupère une visite spécifique à partir de son ID.
+// GetVisit récupère une visite spécifique à partir de son ID, ou toutes les visites s'il n'y a pas d'ID spécifié.
 func GetVisit(c *fiber.Ctx) error {
 	id := c.Query("id")
 
-	var visit Visit
-	err := db.QueryRow("SELECT PhoneNumberProspect, PhoneNumberVisitor, IdRealEstate, CodeVerification, StartTime, Price, Status, Note FROM visit WHERE ID = $1", id).Scan(&visit.PhoneNumberProspect, &visit.PhoneNumberVisitor, &visit.IdRealEstate, &visit.CodeVerification, &visit.StartTime, &visit.Price, &visit.Status, &visit.Note)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return c.Status(fiber.StatusNotFound).SendString("Visite non trouvée")
+	// Si un ID est spécifié dans les paramètres de la requête,
+	// on récupère uniquement cette visite spécifique.
+	if id != "" {
+		var visit Visit
+		stmt, err := db.Prepare("SELECT IdVisit, PhoneNumberProspect, PhoneNumberVisitor, IdRealEstate, CodeVerification, StartTime, Price, Status, Note FROM visit WHERE IdVisit = $1")
+		if err != nil {
+			return err
 		}
-		return err
+		defer stmt.Close()
+
+		row := stmt.QueryRow(id)
+		err = row.Scan(&visit.IdVisit, &visit.PhoneNumberProspect, &visit.PhoneNumberVisitor, &visit.IdRealEstate, &visit.CodeVerification, &visit.StartTime, &visit.Price, &visit.Status, &visit.Note)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return c.Status(fiber.StatusNotFound).SendString("Visite non trouvée")
+			}
+			return err
+		}
+		return c.JSON(visit)
 	}
 
-	return c.JSON(visit)
+	// Si aucun ID n'est spécifié, on récupère toutes les visites.
+	rows, err := db.Query("SELECT IdVisit, PhoneNumberProspect, PhoneNumberVisitor, IdRealEstate, CodeVerification, StartTime, Price, Status, Note FROM visit")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var visits []Visit
+	for rows.Next() {
+		var visit Visit
+		err := rows.Scan(&visit.IdVisit, &visit.PhoneNumberProspect, &visit.PhoneNumberVisitor, &visit.IdRealEstate, &visit.CodeVerification, &visit.StartTime, &visit.Price, &visit.Status, &visit.Note)
+		if err != nil {
+			return err
+		}
+		visits = append(visits, visit)
+	}
+
+	return c.JSON(visits)
 }
 
 // UpdateVisit met à jour une visite existante dans la base de données.
