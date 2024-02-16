@@ -9,14 +9,14 @@ func GetRole(c *fiber.Ctx) error {
 	// on récupère uniquement ce rôle spécifique.
 	if id != "" {
 		var r Role
-		stmt, err := db.Prepare("SELECT * FROM Role WHERE IdRole = $1")
+		stmt, err := db.Prepare("SELECT * FROM role WHERE IdRole = $1")
 		if err != nil {
 			return err
 		}
 		defer stmt.Close()
 
 		row := stmt.QueryRow(id)
-		err = row.Scan(&r.IdRole, &r.Libelle)
+		err = row.Scan(&r.IdRole, &r.Label)
 		if err != nil {
 			return err
 		}
@@ -24,7 +24,7 @@ func GetRole(c *fiber.Ctx) error {
 	}
 
 	// Si aucun ID n'est spécifié, on récupère tous les rôles.
-	rows, err := db.Query("SELECT * FROM Role")
+	rows, err := db.Query("SELECT * FROM role")
 	if err != nil {
 		return err
 	}
@@ -33,7 +33,7 @@ func GetRole(c *fiber.Ctx) error {
 	var roles []Role
 	for rows.Next() {
 		var r Role
-		err := rows.Scan(&r.IdRole, &r.Libelle)
+		err := rows.Scan(&r.IdRole, &r.Label)
 		if err != nil {
 			return err
 		}
@@ -49,13 +49,13 @@ func CreateRole(c *fiber.Ctx) error {
 		return err
 	}
 
-	stmt, err := db.Prepare("INSERT INTO Role (Libelle) VALUES ($1)")
+	stmt, err := db.Prepare("INSERT INTO role (Label) VALUES ($1)")
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(r.Libelle)
+	_, err = stmt.Exec(r.Label)
 	if err != nil {
 		return err
 	}
@@ -70,13 +70,13 @@ func UpdateRole(c *fiber.Ctx) error {
 		return err
 	}
 
-	stmt, err := db.Prepare("UPDATE Role SET Libelle=$1 WHERE IdRole=$2")
+	stmt, err := db.Prepare("UPDATE role SET Label=$1 WHERE IdRole=$2")
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(r.Libelle, id)
+	_, err = stmt.Exec(r.Label, id)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func UpdateRole(c *fiber.Ctx) error {
 func DeleteRole(c *fiber.Ctx) error {
 	id := c.Query("id")
 
-	stmt, err := db.Prepare("DELETE FROM Role WHERE IdRole=$1")
+	stmt, err := db.Prepare("DELETE FROM role WHERE IdRole=$1")
 	if err != nil {
 		return err
 	}

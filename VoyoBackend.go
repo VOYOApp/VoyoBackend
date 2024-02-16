@@ -54,13 +54,9 @@ func main() {
 	//	AllowHeaders: "Content-Type",
 	//}))
 
-	app.Get("/users", getUsers)
-	app.Get("/users/:id", getUser)
-
 	app.Get("/status", func(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusOK)
 	})
-
 	app.Get("/version", func(c *fiber.Ctx) error {
 		return c.SendString("1.0.0")
 	})
@@ -68,47 +64,41 @@ func main() {
 	app.Post("/otp", sendOTP)
 	app.Post("/verifyOTP", verifyOTP)
 
-	// Routes pour la table "Bien"
-	app.Get("/biens", GetBien)
-	app.Post("/biens", CreateBien)
-	app.Put("/biens", UpdateBien)
-	app.Delete("/biens", DeleteBien)
+	// Routes pour la table "Realestate"
+	app.Get("/realestate", GetRealEstate)
+	app.Post("/realestate", CreateRealEstate)
+	app.Put("/realestate", UpdateRealEstate)
+	app.Delete("/realestate", DeleteRealEstate)
+
+	// Routes pour la table "TypeRealeState"
+	app.Get("/realestate", GetTypeRealEstate)
+	app.Post("/realestate", CreateTypeRealEstate)
+	app.Put("/realestate", UpdateTypeRealEstate)
+	app.Delete("/realestate", DeleteTypeRealEstate)
+
+	// Routes pour la table "Availability"
+	app.Get("/availability", GetAvailability)
+	app.Post("/availability", CreateAvailability)
+	app.Put("/availability", UpdateAvailability)
+	app.Delete("/availability", DeleteAvailability)
 
 	// Routes pour la table "Role"
-	app.Get("/roles", GetRole)
-	app.Post("/roles", CreateRole)
-	app.Put("/roles", UpdateRole)
-	app.Delete("/roles", DeleteRole)
+	app.Get("/role", GetRole)
+	app.Post("/role", CreateRole)
+	app.Put("/role", UpdateRole)
+	app.Delete("/role", DeleteRole)
 
-	// Routes pour la table "Lieux"
-	app.Get("/lieux", GetLieux)
-	app.Post("/lieux", CreateLieux)
-	app.Put("/lieux", UpdateLieux)
-	app.Delete("/lieux", DeleteLieux)
+	// Routes pour la table "User"
+	app.Get("/user", GetUser)
+	app.Post("/user", CreateUser)
+	app.Put("/user", UpdateUser)
+	app.Delete("/user", DeleteUser)
 
-	// Routes pour la table "Utilisateur"
-	app.Get("/utilisateurs", GetUtilisateur)
-	app.Post("/utilisateurs", CreateUtilisateur)
-	app.Put("/utilisateurs", UpdateUtilisateur)
-	app.Delete("/utilisateurs", DeleteUtilisateur)
-
-	// Routes pour la table "Calendrier"
-	app.Get("/calendriers", GetCalendrier)
-	app.Post("/calendriers", CreateCalendrier)
-	app.Put("/calendriers", UpdateCalendrier)
-	app.Delete("/calendriers", DeleteCalendrier)
-
-	// Routes pour la table "Visite"
-	app.Get("/visites", GetVisite)
-	app.Post("/visites", CreateVisite)
-	app.Put("/visites", UpdateVisite)
-	app.Delete("/visites", DeleteVisite)
-
-	// Routes pour la table "Travail"
-	app.Get("/travaux", GetTravail)
-	app.Post("/travaux", CreateTravail)
-	app.Put("/travaux", UpdateTravail)
-	app.Delete("/travaux", DeleteTravail)
+	// Routes pour la table "Visit"
+	app.Get("/visit", GetVisit)
+	app.Post("/visit", CreateVisit)
+	app.Put("/visit", UpdateVisit)
+	app.Delete("/visit", DeleteVisit)
 
 	fmt.Printf("Server is running on :%d...\n", 3000)
 	err := app.Listen(":3000")

@@ -6,12 +6,6 @@ import (
 
 //omitempty permet de ne pas afficher le champs dans le json s'il est nil
 
-type User struct {
-	ID    int    `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
 type OTPData struct {
 	PhoneNumber string `json:"phoneNumber,omitempty" validate:"required"`
 }
@@ -21,63 +15,53 @@ type VerifyData struct {
 	Code string   `json:"code,omitempty" validate:"required"`
 }
 
-type Bien struct {
-	IdBien       int    `json:"id"`
-	CodePostal   int    `json:"postal_code"`
-	Ville        string `json:"city"`
-	Adresse      string `json:"address"`
-	Proprietaire string `json:"owner"`
-	Pays         string `json:"country"`
+type TypeRealEstate struct {
+	IdTypeRealEstate int           `json:"id"`
+	Label            string        `json:"label"`
+	Duration         time.Duration `json:"duration"`
+}
+
+type RealEstate struct {
+	IdRealEstate     int    `json:"id"`
+	IdAddressGMap    string `json:"address_id"`
+	IdTypeRealEstate int    `json:"type_id"`
 }
 
 type Role struct {
-	IdRole  int    `json:"id"`
-	Libelle string `json:"label"`
+	IdRole int    `json:"id"`
+	Label  string `json:"label"`
 }
 
-type Lieux struct {
-	IdLieux    int    `json:"id"`
-	Radius     string `json:"radius"`
-	Adresse    string `json:"address"`
-	Ville      string `json:"city"`
-	CodePostal string `json:"postal_code"`
-	Pays       string `json:"country"`
+type User struct {
+	PhoneNumber    string  `json:"phone_number,omitempty"`
+	FirstName      string  `json:"first_name"`
+	LastName       string  `json:"last_name"`
+	Email          string  `json:"email,omitempty"`
+	Description    string  `json:"description"`
+	Password       string  `json:"password"`
+	IdRole         int     `json:"role_id"`
+	Biography      string  `json:"biography,omitempty"`
+	ProfilePicture string  `json:"profile_picture,omitempty"`
+	Pricing        float64 `json:"pricing,omitempty"`
+	IdAddressGMap  string  `json:"address_id,omitempty"`
+	Radius         string  `json:"radius,omitempty"`
 }
 
-type Utilisateur struct {
-	IdUtilisateur int      `json:"id"`
-	FirstName     string   `json:"first_name"`
-	LastName      string   `json:"last_name"`
-	Email         string   `json:"email"`
-	Adresse       string   `json:"address"`
-	Ville         string   `json:"city"`
-	CodePostal    int      `json:"postal_code"`
-	Tel           string   `json:"tel"`
-	Note          *float64 `json:"note"`
-	Description   string   `json:"description"`
-	Password      string   `json:"password"`
-	IdRole        int      `json:"role_id"`
+type Availability struct {
+	IdAvailability int       `json:"id"`
+	PhoneNumber    string    `json:"phone_number"`
+	Availability   time.Time `json:"availability"`
+	Duration       time.Time `json:"duration"`
+	Repeat         string    `json:"repeat"`
 }
 
-type Calendrier struct {
-	IdUtilisateur int       `json:"user_id"`
-	IdCalendrier  int       `json:"calendar_id"`
-	Disponibilite time.Time `json:"availability"`
-	Temps         time.Time `json:"time"`
-}
-
-type Visite struct {
-	IdUtilisateur    int       `json:"user_id"`
-	IdUtilisateur1   int       `json:"user_id_1"`
-	IdBien           int       `json:"property_id"`
-	Agence           string    `json:"agency"`
-	CodeVerification int       `json:"verification_code"`
-	Horaire          time.Time `json:"schedule"`
-	APayer           string    `json:"to_pay"`
-	Etat             string    `json:"state"`
-}
-
-type Travail struct {
-	IdUtilisateur int `json:"user_id"`
-	IdLieux       int `json:"place_id"`
+type Visit struct {
+	PhoneNumberProspect string    `json:"phone_number_prospect"`
+	PhoneNumberVisitor  string    `json:"phone_number_visitor"`
+	IdRealEstate        int       `json:"real_estate_id"`
+	CodeVerification    int16     `json:"verification_code"`
+	StartTime           time.Time `json:"start_time"`
+	Price               string    `json:"price"`
+	Status              string    `json:"status"`
+	Note                float64   `json:"note,omitempty"`
 }
