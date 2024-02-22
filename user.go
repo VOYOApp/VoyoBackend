@@ -11,6 +11,7 @@ import (
 func CreateUser(c *fiber.Ctx) error {
 	var user User
 	if err := c.BodyParser(&user); err != nil {
+		fmt.Println(err)
 		return err
 	}
 

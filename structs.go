@@ -43,7 +43,7 @@ type User struct {
 	ProfilePicture *string  `json:"profile_picture"`
 	Pricing        *float64 `json:"pricing"`
 	IdAddressGMap  *string  `json:"address_id"`
-	Radius         *string  `json:"radius"`
+	Radius         *float64 `json:"radius"`
 }
 
 type Availability struct {
