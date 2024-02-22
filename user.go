@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
@@ -33,33 +32,48 @@ func CreateUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.Status(fiber.StatusCreated).SendString("Utilisateur créé avec succès")
+	return c.Status(fiber.StatusCreated).SendString("User successfully created")
 }
 
 func LoginUser(c *fiber.Ctx) error {
-	var user User
-	if err := c.BodyParser(&user); err != nil {
-		return err
+	email := c.Query("email")
+	phoneNumber := c.Query("phone_number")
+	password := c.Query("password")
+
+	var query string
+	var arg interface{}
+
+	if email != "" {
+		query = `SELECT Password FROM "user" WHERE Email = $1`
+		arg = email
+	} else if phoneNumber != "" {
+		query = `SELECT Password FROM "user" WHERE PhoneNumber = $1`
+		arg = phoneNumber
+	} else {
+		return c.Status(fiber.StatusBadRequest).SendString("Please specify an email or phone number")
 	}
 
-	stmt, err := db.Prepare(`SELECT Password FROM "user" WHERE PhoneNumber = $1`)
+	stmt, err := db.Prepare(query)
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(user.Password)
+	var user User
+	err = stmt.QueryRow(arg).Scan(&user.Password)
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
 
 	// Vérification du mot de passe
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(user.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).SendString("Mot de passe incorrect")
+		return c.Status(fiber.StatusUnauthorized).SendString("Wrong password")
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return c.Status(fiber.StatusOK).SendString("Successful connection")
 }
 
 // GetUser récupère un utilisateur spécifique à partir de son ID, ou tous les utilisateurs s'il n'y a pas d'ID spécifié.
@@ -79,10 +93,7 @@ func GetUser(c *fiber.Ctx) error {
 		row := stmt.QueryRow(id)
 		err = row.Scan(&user.PhoneNumber, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.IdRole, &user.Biography, &user.ProfilePicture, &user.Pricing, &user.IdAddressGMap, &user.Radius)
 		if err != nil {
-			if err == sql.ErrNoRows {
-				return c.Status(fiber.StatusNotFound).SendString("Utilisateur non trouvé")
-			}
-			return err
+			return c.Status(fiber.StatusNotFound).SendString("User not found")
 		}
 		return c.JSON(user)
 	}
