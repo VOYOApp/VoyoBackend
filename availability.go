@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -9,17 +10,32 @@ import (
 func CreateAvailability(c *fiber.Ctx) error {
 	var availability Availability
 	if err := c.BodyParser(&availability); err != nil {
+		fmt.Println(err)
 		return err
 	}
 
-	stmt, err := db.Prepare("INSERT INTO availability (PhoneNumber, Availability, Duration, Repeat) VALUES ($1, $2, $3, $4)")
+	fmt.Println(availability)
+
+	// Convert duration to seconds
+	durationInSeconds := int(availability.Duration.Seconds())
+
+	stmt, err := db.Prepare("INSERT INTO availability (PhoneNumber, Availability, Duration, Repeat) VALUES ($1, $2, $3::interval, $4)")
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
-	defer stmt.Close()
 
-	_, err = stmt.Exec(availability.PhoneNumber, availability.Availability, availability.Duration, availability.Repeat)
+	defer func(stmt *sql.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	}(stmt)
+
+	_, err = stmt.Exec(availability.PhoneNumber, availability.Availability, durationInSeconds, availability.Repeat)
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"time"
 )
 
@@ -46,11 +47,31 @@ type User struct {
 	Radius         *float64 `json:"radius"`
 }
 
+type Duration struct {
+	time.Duration
+}
+
+func (d *Duration) UnmarshalJSON(b []byte) error {
+	var durationString string
+	if err := json.Unmarshal(b, &durationString); err != nil {
+		return err
+	}
+
+	// Parse the duration string
+	duration, err := time.ParseDuration(durationString)
+	if err != nil {
+		return err
+	}
+
+	d.Duration = duration
+	return nil
+}
+
 type Availability struct {
 	IdAvailability int       `json:"id"`
 	PhoneNumber    string    `json:"phone_number"`
 	Availability   time.Time `json:"availability"`
-	Duration       time.Time `json:"duration"`
+	Duration       Duration  `json:"duration"`
 	Repeat         string    `json:"repeat"`
 }
 
