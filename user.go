@@ -1,9 +1,12 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/utils"
 	"golang.org/x/crypto/bcrypt"
+	"strconv"
 )
 
 // CreateUser crée un nouvel utilisateur dans la base de données.
@@ -31,6 +34,54 @@ func CreateUser(c *fiber.Ctx) error {
 		fmt.Println(err)
 		return err
 	}
+
+	// Get the X and Y coordinates from the address using the google maps api https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyBznSC8S1mPU-GPjsxuagQqnNK3a8xVOl4&place_id=
+	if user.IdAddressGMap != nil {
+		// Dereference the pointer and get coordinates
+		address := utils.Trim(*user.IdAddressGMap, ' ')
+		coordinates, err := getCoordinatesFromAddress(address)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+
+		user.X = &coordinates.Lat
+		user.Y = &coordinates.Lng
+	} else {
+		fmt.Println("Address is nil or not provided")
+	}
+
+	fmt.Println("")
+
+	request := fmt.Sprintf(`
+	UPDATE public.user 
+	SET X=%[1]s, Y=%[2]s, geom=ST_Buffer(ST_SetSRID(ST_MakePoint(%[1]s, %[2]s), %[3]s), 500) 
+	WHERE PhoneNumber='%[4]s'`,
+		strconv.FormatFloat(*user.X, 'f', -1, 64),
+		strconv.FormatFloat(*user.Y, 'f', -1, 64),
+		strconv.FormatFloat(*user.Radius, 'f', -1, 64),
+		user.PhoneNumber,
+	)
+
+	rows, err := db.Query(request)
+	if err != nil {
+		fmt.Println("💥 Error executing the request on createListeSufs()")
+		fmt.Println(err)
+		return err
+	}
+
+	// Close the rows
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			fmt.Println("💥 Error closing the rows")
+		}
+	}(rows)
+
+	fmt.Sprintf("User %s (%s %s) successfully created",
+		user.PhoneNumber,
+		user.FirstName,
+		user.LastName)
 
 	return c.Status(fiber.StatusCreated).SendString("User successfully created")
 }

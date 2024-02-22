@@ -45,6 +45,9 @@ type User struct {
 	Pricing        *float64 `json:"pricing"`
 	IdAddressGMap  *string  `json:"address_id"`
 	Radius         *float64 `json:"radius"`
+	X              *float64 `json:"x"`
+	Y              *float64 `json:"y"`
+	Geom           *string  `json:"geom"`
 }
 
 type Duration struct {
@@ -85,4 +88,19 @@ type Visit struct {
 	Price               string    `json:"price"`
 	Status              string    `json:"status"`
 	Note                float64   `json:"note"`
+}
+
+// Structs for unmarshaling the Google Maps API response
+type googleMapsCoordinates struct {
+	Lat float64 `json:"lat"`
+	Lng float64 `json:"lng"`
+}
+
+type googleMapsResponse struct {
+	Results []struct {
+		Geometry struct {
+			Location googleMapsCoordinates `json:"location"`
+		} `json:"geometry"`
+	} `json:"results"`
+	Status string `json:"status"`
 }
