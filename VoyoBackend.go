@@ -90,6 +90,7 @@ func main() {
 
 	// Routes pour la table "User"
 	app.Get("/user", GetUser)
+	app.Get("/userW", LoginUserWithPhoneNumber)
 	app.Post("/user", CreateUser)
 	app.Put("/user", UpdateUser)
 	app.Delete("/user", DeleteUser)

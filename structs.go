@@ -37,11 +37,10 @@ type User struct {
 	FirstName      string   `json:"first_name"`
 	LastName       string   `json:"last_name"`
 	Email          string   `json:"email"`
-	Description    *string  `json:"description"`
 	Password       string   `json:"password"`
 	IdRole         int      `json:"role_id"`
 	Biography      *string  `json:"biography"`
-	ProfilePicture *string  `json:"profile_picture "`
+	ProfilePicture *string  `json:"profile_picture"`
 	Pricing        *float64 `json:"pricing"`
 	IdAddressGMap  *string  `json:"address_id"`
 	Radius         *string  `json:"radius"`
