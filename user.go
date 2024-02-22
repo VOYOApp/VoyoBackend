@@ -35,7 +35,7 @@ func CreateUser(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).SendString("Utilisateur créé avec succès")
 }
 
-func LoginUserWithPhoneNumber(c *fiber.Ctx) error {
+func LoginUser(c *fiber.Ctx) error {
 	var user User
 	if err := c.BodyParser(&user); err != nil {
 		return err
@@ -60,10 +60,6 @@ func LoginUserWithPhoneNumber(c *fiber.Ctx) error {
 
 	return c.SendStatus(fiber.StatusOK)
 }
-
-//func LoginUserWithEmail(c *fiber.Ctx) error {
-//
-//}
 
 // GetUser récupère un utilisateur spécifique à partir de son ID, ou tous les utilisateurs s'il n'y a pas d'ID spécifié.
 func GetUser(c *fiber.Ctx) error {
