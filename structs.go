@@ -102,6 +102,11 @@ type Criteria struct {
 	Reusable       bool   `json:"reusable"`
 }
 
+type LinkCriteriaVisit struct {
+	IDCriteria int `json:"idCriteria"`
+	IDVisit    int `json:"idVisit"`
+}
+
 // Structs for unmarshaling the Google Maps API response
 type googleMapsCoordinates struct {
 	Lat float64 `json:"lat"`
