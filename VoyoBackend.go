@@ -101,6 +101,12 @@ func main() {
 	app.Put("/visit", UpdateVisit)
 	app.Delete("/visit", DeleteVisit)
 
+	// Routes pour la table "Criteria"
+	app.Get("/criteria", GetCriteria)
+	app.Post("/criteria", CreateCriteria)
+	app.Put("/criteria", UpdateCriteria)
+	app.Delete("/criteria", DeleteCriteria)
+	
 	fmt.Printf("Server is running on :%d...\n", 3000)
 	err := app.Listen(":3000")
 	if err != nil {

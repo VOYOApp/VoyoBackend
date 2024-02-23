@@ -90,6 +90,18 @@ type Visit struct {
 	Note                float64   `json:"note"`
 }
 
+type Criteria struct {
+	ID             int    `json:"id"`
+	Criteria       string `json:"criteria"`
+	CriteriaAnswer string `json:"criteria_answer"`
+	PhotoRequired  bool   `json:"photo_required"`
+	Photo          string `json:"photo"`
+	VideoRequired  bool   `json:"video_required"`
+	Video          string `json:"video"`
+	PhoneNumber    string `json:"phone_number"`
+	Reusable       bool   `json:"reusable"`
+}
+
 // Structs for unmarshaling the Google Maps API response
 type googleMapsCoordinates struct {
 	Lat float64 `json:"lat"`

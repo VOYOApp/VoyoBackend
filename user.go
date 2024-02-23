@@ -266,5 +266,7 @@ func DeleteUser(c *fiber.Ctx) error {
 		})
 	}
 
+	// TODO: instead of removing the user, set all data to null or User deleted in the database to avoid errors on foreign keys
+
 	return c.SendStatus(fiber.StatusNoContent)
 }
