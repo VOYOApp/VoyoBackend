@@ -13,45 +13,60 @@ import (
 func CreateUser(c *fiber.Ctx) error {
 	var user User
 	if err := c.BodyParser(&user); err != nil {
-		fmt.Println(err)
-		return err
+		fmt.Println("💥 Error parsing the body in CreateUser() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return err
+		fmt.Println("💥 Error hashing the password in CreateUser() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
 
 	stmt, err := db.Prepare(`INSERT INTO "user" (PhoneNumber, FirstName, LastName, Email, Password, IdRole, Biography, ProfilePicture, Pricing, IdAddressGMap, Radius) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`)
 	if err != nil {
-		fmt.Println(err)
-		return err
+		fmt.Println("💥 Error preparing the request in CreateUser() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
-	defer stmt.Close()
+	defer func(stmt *sql.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			fmt.Println("💥 Error closing the statement in CreateUser()")
+			return
+		}
+	}(stmt)
 
 	_, err = stmt.Exec(user.PhoneNumber, user.FirstName, user.LastName, user.Email, hashedPassword, user.IdRole, user.Biography, user.ProfilePicture, user.Pricing, user.IdAddressGMap, user.Radius)
 	if err != nil {
-		fmt.Println(err)
-		return err
+		fmt.Println("💥 Error executing the request in CreateUser() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
 
-	// Get the X and Y coordinates from the address using the google maps api https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyBznSC8S1mPU-GPjsxuagQqnNK3a8xVOl4&place_id=
+	// Get the X and Y coordinates from the address using the google maps api
 	if user.IdAddressGMap != nil {
 		// Dereference the pointer and get coordinates
 		address := utils.Trim(*user.IdAddressGMap, ' ')
-		coordinates, err := getCoordinatesFromAddress(address)
-		if err != nil {
-			fmt.Println(err)
-			return err
+		coordinates, errGmaps := getCoordinatesFromAddress(address)
+		if errGmaps != nil {
+			fmt.Println("💥 Error getting the coordinates from the address in CreateUser() : ", errGmaps)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
 		}
 
 		user.X = &coordinates.Lat
 		user.Y = &coordinates.Lng
 	} else {
-		fmt.Println("Address is nil or not provided")
+		fmt.Println("=> Address is nil or not provided")
 	}
-
-	fmt.Println("")
 
 	request := fmt.Sprintf(`
 	UPDATE public.user 
@@ -65,23 +80,19 @@ func CreateUser(c *fiber.Ctx) error {
 
 	rows, err := db.Query(request)
 	if err != nil {
-		fmt.Println("💥 Error executing the request on createListeSufs()")
-		fmt.Println(err)
-		return err
+		fmt.Println("💥 Error executing the request in CreateUser() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
 
 	// Close the rows
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
 		if err != nil {
-			fmt.Println("💥 Error closing the rows")
+			fmt.Println("💥 Error closing the rows in CreateUser()")
 		}
 	}(rows)
-
-	fmt.Sprintf("User %s (%s %s) successfully created",
-		user.PhoneNumber,
-		user.FirstName,
-		user.LastName)
 
 	return c.Status(fiber.StatusCreated).SendString("User successfully created")
 }
@@ -101,27 +112,41 @@ func LoginUser(c *fiber.Ctx) error {
 		query = `SELECT Password FROM "user" WHERE PhoneNumber = $1`
 		arg = phoneNumber
 	} else {
-		return c.Status(fiber.StatusBadRequest).SendString("Please specify an email or phone number")
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Please provide an email or a phone number",
+		})
 	}
 
 	stmt, err := db.Prepare(query)
 	if err != nil {
-		fmt.Println(err)
-		return err
+		fmt.Println("💥 Error preparing the request in LoginUser() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
-	defer stmt.Close()
+
+	defer func(stmt *sql.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			fmt.Println("💥 Error closing the statement in LoginUser()")
+			return
+		}
+	}(stmt)
 
 	var user User
 	err = stmt.QueryRow(arg).Scan(&user.Password)
 	if err != nil {
-		fmt.Println(err)
-		return err
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "User not found",
+		})
 	}
 
 	// Vérification du mot de passe
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).SendString("Wrong password")
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid password",
+		})
 	}
 
 	return c.Status(fiber.StatusOK).SendString("Successful connection")
@@ -137,22 +162,31 @@ func GetUser(c *fiber.Ctx) error {
 
 		stmt, err := db.Prepare(`SELECT PhoneNumber, FirstName, LastName, Email, Password, IdRole, Biography, ProfilePicture, Pricing, IdAddressGMap, Radius FROM "user" WHERE PhoneNumber = $1`)
 		if err != nil {
-			return err
+			fmt.Println("💥 Error preparing the request to get one user in GetUser() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
 		}
 		defer stmt.Close()
 
 		row := stmt.QueryRow(id)
 		err = row.Scan(&user.PhoneNumber, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.IdRole, &user.Biography, &user.ProfilePicture, &user.Pricing, &user.IdAddressGMap, &user.Radius)
 		if err != nil {
-			return c.Status(fiber.StatusNotFound).SendString("User not found")
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "User not found",
+			})
 		}
+
 		return c.JSON(user)
 	}
 
 	// Si aucun ID n'est spécifié, on récupère tous les utilisateurs.
 	rows, err := db.Query(`SELECT PhoneNumber, FirstName, LastName, Email, Password, IdRole, Biography, ProfilePicture, Pricing, IdAddressGMap, Radius FROM "user"`)
 	if err != nil {
-		return err
+		fmt.Println("💥 Error preparing the request in GetUser() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
 	defer rows.Close()
 
@@ -161,7 +195,10 @@ func GetUser(c *fiber.Ctx) error {
 		var user User
 		err := rows.Scan(&user.PhoneNumber, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.IdRole, &user.Biography, &user.ProfilePicture, &user.Pricing, &user.IdAddressGMap, &user.Radius)
 		if err != nil {
-			return err
+			fmt.Println("💥 Error executing the request in GetUser() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
 		}
 		users = append(users, user)
 	}
@@ -175,18 +212,34 @@ func UpdateUser(c *fiber.Ctx) error {
 
 	var user User
 	if err := c.BodyParser(&user); err != nil {
-		return err
+		fmt.Println("💥 Error parsing the body in UpdateUser() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
 
 	stmt, err := db.Prepare(`UPDATE "user" SET PhoneNumber=$1, FirstName=$2, LastName=$3, Email=$4, Password=$5, IdRole=$6, Biography=$7, ProfilePicture=$8, Pricing=$9, IdAddressGMap=$10, Radius=$11 WHERE PhoneNumber=$12`)
 	if err != nil {
-		return err
+		fmt.Println("💥 Error preparing the request in UpdateUser() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
-	defer stmt.Close()
+
+	defer func(stmt *sql.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			fmt.Println("💥 Error closing the statement in UpdateUser()")
+			return
+		}
+	}(stmt)
 
 	_, err = stmt.Exec(user.PhoneNumber, user.FirstName, user.LastName, user.Email, user.Password, user.IdRole, user.Biography, user.ProfilePicture, user.Pricing, user.IdAddressGMap, user.Radius, id)
 	if err != nil {
-		return err
+		fmt.Println("💥 Error executing the request in UpdateUser() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
 
 	return c.SendStatus(fiber.StatusOK)
@@ -198,13 +251,19 @@ func DeleteUser(c *fiber.Ctx) error {
 
 	stmt, err := db.Prepare(`DELETE FROM "user" WHERE PhoneNumber=$1`)
 	if err != nil {
-		return err
+		fmt.Println("💥 Error preparing the request in DeleteUser() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(id)
 	if err != nil {
-		return err
+		fmt.Println("💥 Error executing the request in DeleteUser() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 )
@@ -10,33 +11,37 @@ import (
 func CreateAvailability(c *fiber.Ctx) error {
 	var availability Availability
 	if err := c.BodyParser(&availability); err != nil {
-		fmt.Println(err)
-		return err
+		fmt.Println("💥 Error parsing the body in CreateAvailability() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
-
-	fmt.Println(availability)
 
 	// Convert duration to seconds
 	durationInSeconds := int(availability.Duration.Seconds())
 
 	stmt, err := db.Prepare("INSERT INTO availability (PhoneNumber, Availability, Duration, Repeat) VALUES ($1, $2, $3::interval, $4)")
 	if err != nil {
-		fmt.Println(err)
-		return err
+		fmt.Println("💥 Error preparing the SQL statement in CreateAvailability() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
 
 	defer func(stmt *sql.Stmt) {
 		err := stmt.Close()
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("💥 Error closing the SQL statement in CreateAvailability() : ", err)
 			return
 		}
 	}(stmt)
 
 	_, err = stmt.Exec(availability.PhoneNumber, availability.Availability, durationInSeconds, availability.Repeat)
 	if err != nil {
-		fmt.Println(err)
-		return err
+		fmt.Println("💥 Error executing the SQL statement in CreateAvailability() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
 
 	return c.Status(fiber.StatusCreated).SendString("Disponibilité créée avec succès")
@@ -52,34 +57,61 @@ func GetAvailability(c *fiber.Ctx) error {
 		var availability Availability
 		stmt, err := db.Prepare("SELECT IdAvailability, PhoneNumber, Availability, Duration, Repeat FROM availability WHERE IdAvailability = $1")
 		if err != nil {
-			return err
+			fmt.Println("💥 Error preparing the SQL statement in GetAvailability() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
 		}
-		defer stmt.Close()
+
+		defer func(stmt *sql.Stmt) {
+			err := stmt.Close()
+			if err != nil {
+				fmt.Println("💥 Error closing the SQL statement in GetAvailability() : ", err)
+				return
+			}
+		}(stmt)
 
 		row := stmt.QueryRow(id)
 		err = row.Scan(&availability.IdAvailability, &availability.PhoneNumber, &availability.Availability, &availability.Duration, &availability.Repeat)
 		if err != nil {
-			if err == sql.ErrNoRows {
-				return c.Status(fiber.StatusNotFound).SendString("Disponibilité non trouvée")
+			if errors.Is(err, sql.ErrNoRows) {
+				return c.Status(fiber.StatusNotFound).SendString("Availability not found")
 			}
-			return err
+
+			fmt.Println("💥 Error scanning the row in GetAvailability() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
 		}
+
 		return c.JSON(availability)
 	}
 
 	// Si aucun ID n'est spécifié, on récupère toutes les disponibilités.
 	rows, err := db.Query("SELECT IdAvailability, PhoneNumber, Availability, Duration, Repeat FROM availability")
 	if err != nil {
-		return err
+		fmt.Println("💥 Error querying the database in GetAvailability() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			fmt.Println("💥 Error closing the rows in GetAvailability() : ", err)
+			return
+		}
+	}(rows)
 
 	var availabilities []Availability
 	for rows.Next() {
 		var availability Availability
 		err := rows.Scan(&availability.IdAvailability, &availability.PhoneNumber, &availability.Availability, &availability.Duration, &availability.Repeat)
 		if err != nil {
-			return err
+			fmt.Println("💥 Error scanning the rows in GetAvailability() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
 		}
 		availabilities = append(availabilities, availability)
 	}
@@ -93,18 +125,34 @@ func UpdateAvailability(c *fiber.Ctx) error {
 
 	var availability Availability
 	if err := c.BodyParser(&availability); err != nil {
-		return err
+		fmt.Println("💥 Error parsing the body in UpdateAvailability() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
 
 	stmt, err := db.Prepare("UPDATE availability SET PhoneNumber=$1, Availability=$2, Duration=$3, Repeat=$4 WHERE ID=$5")
 	if err != nil {
-		return err
+		fmt.Println("💥 Error preparing the SQL statement in UpdateAvailability() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
-	defer stmt.Close()
+
+	defer func(stmt *sql.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			fmt.Println("💥 Error closing the SQL statement in UpdateAvailability() : ", err)
+			return
+		}
+	}(stmt)
 
 	_, err = stmt.Exec(availability.PhoneNumber, availability.Availability, availability.Duration, availability.Repeat, id)
 	if err != nil {
-		return err
+		fmt.Println("💥 Error executing the SQL statement in UpdateAvailability() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
 
 	return c.SendStatus(fiber.StatusOK)
@@ -116,13 +164,26 @@ func DeleteAvailability(c *fiber.Ctx) error {
 
 	stmt, err := db.Prepare("DELETE FROM availability WHERE ID=$1")
 	if err != nil {
-		return err
+		fmt.Println("💥 Error preparing the SQL statement in DeleteAvailability() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
-	defer stmt.Close()
+
+	defer func(stmt *sql.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			fmt.Println("💥 Error closing the SQL statement in DeleteAvailability() : ", err)
+			return
+		}
+	}(stmt)
 
 	_, err = stmt.Exec(id)
 	if err != nil {
-		return err
+		fmt.Println("💥 Error executing the SQL statement in DeleteAvailability() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)

@@ -83,9 +83,9 @@ type Visit struct {
 	PhoneNumberProspect string    `json:"phone_number_prospect"`
 	PhoneNumberVisitor  string    `json:"phone_number_visitor"`
 	IdRealEstate        int       `json:"real_estate_id"`
-	CodeVerification    int16     `json:"verification_code"`
+	CodeVerification    int       `json:"verification_code"`
 	StartTime           time.Time `json:"start_time"`
-	Price               string    `json:"price"`
+	Price               float64   `json:"price"`
 	Status              string    `json:"status"`
 	Note                float64   `json:"note"`
 }
