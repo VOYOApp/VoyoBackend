@@ -89,7 +89,7 @@ func main() {
 	user := root.Group("/user")
 	user.Get("/", VerifyJWT, GetUser)
 	user.Get("/login", LoginUser)
-	user.Post("/inscription", CreateUser)
+	user.Post("/", CreateUser)
 	user.Put("/", UpdateUser)
 	user.Delete("/", DeleteUser)
 
@@ -112,6 +112,12 @@ func main() {
 	linkcriteriavisit.Get("/", GetLinkCriteriaVisit)
 	linkcriteriavisit.Post("/", CreateLinkCriteriaVisit)
 	linkcriteriavisit.Delete("/", DeleteLinkCriteriaVisit)
+
+	// Security routes
+	security := root.Group("/security")
+	security.Get("/", VerifyJWT, func(c *fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusOK)
+	})
 
 	// Start the server
 	fmt.Printf("Server is running on :%d...\n", 3000)
