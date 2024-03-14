@@ -48,73 +48,72 @@ func init() {
 func main() {
 	app := fiber.New()
 
-	//app.Use(cors.New(cors.Config{
-	//	AllowOrigins: "*",
-	//	AllowMethods: "GET",
-	//	AllowHeaders: "Content-Type",
-	//}))
-
-	app.Get("/status", func(c *fiber.Ctx) error {
+	// Define root routes
+	root := app.Group("/api")
+	root.Get("/status", func(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusOK)
 	})
-	app.Get("/version", func(c *fiber.Ctx) error {
+	root.Get("/version", func(c *fiber.Ctx) error {
 		return c.SendString("1.0.0")
 	})
 
-	app.Post("/otp", sendOTP)
-	app.Post("/verifyOTP", verifyOTP)
+	// Define routes for "Realestate"
+	realestate := root.Group("/realestate")
+	realestate.Get("/", GetRealEstate)
+	realestate.Post("/", CreateRealEstate)
+	realestate.Put("/", UpdateRealEstate)
+	realestate.Delete("/", DeleteRealEstate)
 
-	// Routes pour la table "Realestate"
-	app.Get("/realestate", GetRealEstate)
-	app.Post("/realestate", CreateRealEstate)
-	app.Put("/realestate", UpdateRealEstate)
-	app.Delete("/realestate", DeleteRealEstate)
+	// Define routes for "TypeRealeState"
+	typerealestate := root.Group("/typerealestate")
+	typerealestate.Get("/", GetTypeRealEstate)
+	typerealestate.Post("/", CreateTypeRealEstate)
+	typerealestate.Put("/", UpdateTypeRealEstate)
+	typerealestate.Delete("/", DeleteTypeRealEstate)
 
-	// Routes pour la table "TypeRealeState"
-	app.Get("/typerealestate", GetTypeRealEstate)
-	app.Post("/typerealestate", CreateTypeRealEstate)
-	app.Put("/typerealestate", UpdateTypeRealEstate)
-	app.Delete("/typerealestate", DeleteTypeRealEstate)
+	// Define routes for "Availability"
+	availability := root.Group("/availability")
+	availability.Get("/", GetAvailability)
+	availability.Post("/", CreateAvailability)
+	availability.Put("/", UpdateAvailability)
+	availability.Delete("/", DeleteAvailability)
 
-	// Routes pour la table "Availability"
-	app.Get("/availability", GetAvailability)
-	app.Post("/availability", CreateAvailability)
-	app.Put("/availability", UpdateAvailability)
-	app.Delete("/availability", DeleteAvailability)
+	// Define routes for "Role"
+	role := root.Group("/role")
+	role.Get("/", GetRole)
+	role.Post("/", CreateRole)
+	role.Put("/", UpdateRole)
+	role.Delete("/", DeleteRole)
 
-	// Routes pour la table "Role"
-	app.Get("/role", GetRole)
-	app.Post("/role", CreateRole)
-	app.Put("/role", UpdateRole)
-	app.Delete("/role", DeleteRole)
+	// Define routes for "User"
+	user := root.Group("/user")
+	user.Get("/", VerifyJWT, GetUser)
+	user.Get("/login", LoginUser)
+	user.Post("/inscription", CreateUser)
+	user.Put("/", UpdateUser)
+	user.Delete("/", DeleteUser)
 
-	// Routes pour la table "User"
-	app.Get("/user", GetUser)
-	app.Get("/login", LoginUser)
-	app.Post("/inscription", CreateUser)
-	app.Put("/user", UpdateUser)
-	app.Delete("/user", DeleteUser)
+	// Define routes for "Visit"
+	visit := root.Group("/visit")
+	visit.Get("/", GetVisit)
+	visit.Post("/", CreateVisit)
+	visit.Put("/", UpdateVisit)
+	visit.Delete("/", DeleteVisit)
 
-	// Routes pour la table "Visit"
-	app.Get("/visit", GetVisit)
-	app.Post("/visit", CreateVisit)
-	app.Put("/visit", UpdateVisit)
-	app.Delete("/visit", DeleteVisit)
+	// Define routes for "Criteria"
+	criteria := root.Group("/criteria")
+	criteria.Get("/", GetCriteria)
+	criteria.Post("/", CreateCriteria)
+	criteria.Put("/", UpdateCriteria)
+	criteria.Delete("/", DeleteCriteria)
 
-	// Routes pour la table "Criteria"
-	app.Get("/criteria", GetCriteria)
-	app.Post("/criteria", CreateCriteria)
-	app.Put("/criteria", UpdateCriteria)
-	app.Delete("/criteria", DeleteCriteria)
+	// Define routes for "linkCriteriaVisit"
+	linkcriteriavisit := root.Group("/linkcriteriavisit")
+	linkcriteriavisit.Get("/", GetLinkCriteriaVisit)
+	linkcriteriavisit.Post("/", CreateLinkCriteriaVisit)
+	linkcriteriavisit.Delete("/", DeleteLinkCriteriaVisit)
 
-	// Routes pour la table "linkCriteriaVisit"
-	app.Get("/linkcriteriavisit", GetLinkCriteriaVisit)
-	app.Post("/linkcriteriavisit", CreateLinkCriteriaVisit)
-	app.Delete("/linkcriteriavisit", DeleteLinkCriteriaVisit)
-
-	// Security
-	app.Get("/verifyjwt", VerifyJWT)
-
+	// Start the server
 	fmt.Printf("Server is running on :%d...\n", 3000)
 	err := app.Listen(":3000")
 	if err != nil {
