@@ -87,11 +87,11 @@ func main() {
 
 	// Define routes for "User"
 	user := root.Group("/user")
-	user.Get("/", VerifyJWT, GetUser)
+	user.Get("/", GetUser)
 	user.Get("/login", LoginUser)
 	user.Post("/", CreateUser)
 	user.Put("/", UpdateUser)
-	user.Delete("/", DeleteUser)
+	user.Delete("/", VerifyJWT, DeleteUser)
 
 	// Define routes for "Visit"
 	visit := root.Group("/visit")
