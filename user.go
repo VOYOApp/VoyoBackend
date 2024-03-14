@@ -149,7 +149,67 @@ func LoginUser(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.Status(fiber.StatusOK).SendString("Successful connection")
+	// Select idrole and phone number
+	stmt, err = db.Prepare(`SELECT IdRole, PhoneNumber FROM "user" WHERE Email = $1 OR PhoneNumber = $2`)
+	if err != nil {
+		fmt.Println("💥 Error preparing the request in LoginUser() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
+	}
+
+	defer func(stmt *sql.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			fmt.Println("💥 Error closing the statement in LoginUser()")
+			return
+		}
+	}(stmt)
+
+	err = stmt.QueryRow(email, phoneNumber).Scan(&user.IdRole, &user.PhoneNumber)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "User not found",
+		})
+	}
+
+	// Get the role name
+	stmt, err = db.Prepare(`SELECT label FROM "role" WHERE IdRole = $1`)
+	if err != nil {
+		fmt.Println("💥 Error preparing the request in LoginUser() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
+	}
+
+	defer func(stmt *sql.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			fmt.Println("💥 Error closing the statement in LoginUser()")
+			return
+		}
+	}(stmt)
+
+	var role string
+	err = stmt.QueryRow(user.IdRole).Scan(&role)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Role not found",
+		})
+	}
+
+	// Generate JWT token
+	token, err := GenerateJWT(user.PhoneNumber, role)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to generate JWT token",
+		})
+	}
+
+	// Return the token in the response
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"token": token,
+	})
 }
 
 // GetUser récupère un utilisateur spécifique à partir de son ID, ou tous les utilisateurs s'il n'y a pas d'ID spécifié.

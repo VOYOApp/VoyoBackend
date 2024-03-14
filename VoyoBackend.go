@@ -112,6 +112,9 @@ func main() {
 	app.Post("/linkcriteriavisit", CreateLinkCriteriaVisit)
 	app.Delete("/linkcriteriavisit", DeleteLinkCriteriaVisit)
 
+	// Security
+	app.Get("/verifyjwt", VerifyJWT)
+
 	fmt.Printf("Server is running on :%d...\n", 3000)
 	err := app.Listen(":3000")
 	if err != nil {
