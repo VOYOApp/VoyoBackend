@@ -118,6 +118,7 @@ type googleMapsResponse struct {
 		Geometry struct {
 			Location googleMapsCoordinates `json:"location"`
 		} `json:"geometry"`
+		FormattedAddress string `json:"formatted_address"`
 	} `json:"results"`
 	Status string `json:"status"`
 }
