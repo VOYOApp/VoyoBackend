@@ -163,7 +163,7 @@ func hasAuthorizedVisitAccess(phoneNumber string, idvisit string) bool {
 	request := fmt.Sprintf(`
 		SELECT idvisit
 		FROM "visit"
-		WHERE idvisit = '%[1]s' AND phonenumberprospect = '%[2]s' OR phonenumbervisitor = '%[2]s'
+		WHERE idvisit = '%[1]s' AND (phonenumberprospect = '%[2]s' OR phonenumbervisitor = '%[2]s')
 	`, idvisit, phoneNumber)
 
 	// Execute the request

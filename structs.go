@@ -138,14 +138,15 @@ type visitDetails struct {
 			Address       string `json:"label"`
 		} `json:"address"`
 		Details struct {
-			StartTime     string `json:"startTime"`
-			EndTime       string `json:"endTime"`
-			Date          string `json:"date"`
-			Duration      string `json:"duration"`
-			Status        string `json:"status"`
-			VisitAccepted bool   `json:"visitAccepted"`
-			CriteriaSent  bool   `json:"criteriaSent"`
-			Price         string `json:"price"`
+			StartTime     string  `json:"startTime"`
+			EndTime       string  `json:"endTime"`
+			Date          string  `json:"date"`
+			Duration      string  `json:"duration"`
+			Status        string  `json:"status"`
+			VisitAccepted bool    `json:"visitAccepted"`
+			CriteriaSent  bool    `json:"criteriaSent"`
+			Price         string  `json:"price"`
+			Note          float32 `json:"note"`
 		} `json:"details"`
 		IDVisit int `json:"id"`
 	} `json:"visit"`

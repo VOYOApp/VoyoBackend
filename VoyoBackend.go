@@ -59,61 +59,61 @@ func main() {
 
 	// Define routes for "Realestate"
 	realestate := root.Group("/realestate")
-	realestate.Get("/", GetRealEstate)
-	realestate.Post("/", CreateRealEstate)
-	realestate.Put("/", UpdateRealEstate)
-	realestate.Delete("/", DeleteRealEstate)
+	realestate.Get("/", GetRealEstate)       // TODO: To check
+	realestate.Post("/", CreateRealEstate)   // TODO: To check
+	realestate.Put("/", UpdateRealEstate)    // TODO: To check
+	realestate.Delete("/", DeleteRealEstate) // TODO: To check
 
 	// Define routes for "TypeRealeState"
 	typerealestate := root.Group("/typerealestate")
-	typerealestate.Get("/", GetTypeRealEstate)
-	typerealestate.Post("/", CreateTypeRealEstate)
-	typerealestate.Put("/", UpdateTypeRealEstate)
-	typerealestate.Delete("/", DeleteTypeRealEstate)
+	typerealestate.Get("/", GetTypeRealEstate)       // TODO: To check
+	typerealestate.Post("/", CreateTypeRealEstate)   // TODO: To check
+	typerealestate.Put("/", UpdateTypeRealEstate)    // TODO: To check
+	typerealestate.Delete("/", DeleteTypeRealEstate) // TODO: To check
 
 	// Define routes for "Availability"
 	availability := root.Group("/availability")
-	availability.Get("/", GetAvailability)
-	availability.Post("/", CreateAvailability)
-	availability.Put("/", UpdateAvailability)
-	availability.Delete("/", DeleteAvailability)
+	availability.Get("/", GetAvailability)       // TODO: To check
+	availability.Post("/", CreateAvailability)   // TODO: To check
+	availability.Put("/", UpdateAvailability)    // TODO: To check
+	availability.Delete("/", DeleteAvailability) // TODO: To check
 
 	// Define routes for "Role"
 	role := root.Group("/role")
-	role.Get("/", GetRole)
-	role.Post("/", CreateRole)
-	role.Put("/", UpdateRole)
-	role.Delete("/", DeleteRole)
+	role.Get("/", GetRole)       // TODO: To check
+	role.Post("/", CreateRole)   // TODO: To check
+	role.Put("/", UpdateRole)    // TODO: To check
+	role.Delete("/", DeleteRole) // TODO: To check
 
 	// Define routes for "User"
 	user := root.Group("/user")
-	user.Get("/", GetUser)
-	user.Get("/login", LoginUser)
-	user.Post("/", CreateUser)
-	user.Put("/", UpdateUser)
-	user.Delete("/", VerifyJWT, DeleteUser)
+	user.Get("/", GetUser)        // TODO: To check
+	user.Get("/login", LoginUser) // TODO: To check
+	user.Post("/", CreateUser)    // TODO: To check
+	user.Put("/", UpdateUser)     // TODO: To check
+	user.Delete("/", DeleteUser)  // TODO: To check
 	user.Get("/homeStats", VerifyJWT, GetHomeStats)
 
 	// Define routes for "Visit"
 	visit := root.Group("/visit")
 	visit.Get("/", VerifyJWT, GetVisit)
-	visit.Post("/", CreateVisit)
-	visit.Put("/", UpdateVisit)
-	visit.Delete("/", DeleteVisit)
-	visit.Get("/upcoming", VerifyJWT, GetVisitsList)
+	visit.Patch("/", VerifyJWT, UpdateVisit)
+	visit.Post("/", CreateVisit)                     // TODO: To check
+	visit.Delete("/", DeleteVisit)                   // TODO: To check
+	visit.Get("/upcoming", VerifyJWT, GetVisitsList) // TODO: To check
 
 	// Define routes for "Criteria"
 	criteria := root.Group("/criteria")
-	criteria.Get("/", GetCriteria)
-	criteria.Post("/", CreateCriteria)
-	criteria.Put("/", UpdateCriteria)
-	criteria.Delete("/", DeleteCriteria)
+	criteria.Get("/", GetCriteria)       // TODO: To check
+	criteria.Post("/", CreateCriteria)   // TODO: To check
+	criteria.Put("/", UpdateCriteria)    // TODO: To check
+	criteria.Delete("/", DeleteCriteria) // TODO: To check
 
 	// Define routes for "linkCriteriaVisit"
 	linkcriteriavisit := root.Group("/linkcriteriavisit")
-	linkcriteriavisit.Get("/", GetLinkCriteriaVisit)
-	linkcriteriavisit.Post("/", CreateLinkCriteriaVisit)
-	linkcriteriavisit.Delete("/", DeleteLinkCriteriaVisit)
+	linkcriteriavisit.Get("/", GetLinkCriteriaVisit)       // TODO: To check
+	linkcriteriavisit.Post("/", CreateLinkCriteriaVisit)   // TODO: To check
+	linkcriteriavisit.Delete("/", DeleteLinkCriteriaVisit) // TODO: To check
 
 	// Security routes
 	security := root.Group("/security")

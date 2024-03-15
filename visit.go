@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"strconv"
 	"strings"
 )
 
@@ -43,146 +44,6 @@ func CreateVisit(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).SendString("Visite créée avec succès")
 }
 
-// GetVisit récupère une visite spécifique à partir de son ID, ou toutes les visites s'il n'y a pas d'ID spécifié.
-func GetVisit(c *fiber.Ctx) error {
-	id := strings.TrimSpace(c.Query("id"))
-
-	if id != "" {
-		if hasAuthorizedVisitAccess(c.Locals("user").(*CustomClaims).PhoneNumber, id) {
-			request := fmt.Sprintf(`
-			SELECT idvisit,
-			       r.IdAddressGmap,
-			       Date(StartTime)                                                       AS Date,
-			       TO_CHAR(StartTime, 'HH24hMI')                                         AS StartTime,
-			       TO_CHAR(starttime + tr.duration, 'HH24hMI')                           AS EndTime,
-			       tr.duration,
-			       Status,
-			       FirstName,
-			       UPPER(CONCAT(LEFT(LastName, 1), '.'))                                 AS LastName,
-			       profilepicture,
-			       vc.count                                                              AS VisitCount,
-			       navg.avg                                                              AS NoteAvg,
-			       price,
-			       CASE WHEN status NOT IN ('DONE', 'ACCEPTED') THEN FALSE ELSE TRUE END AS VisitAccepted,
-			       CASE
-			           WHEN (SELECT COUNT(idVisit) FROM public.linkcriteriavisit WHERE idVisit = 135) > 0 THEN TRUE
-			           ELSE FALSE END                                                    AS CriteriaSent
-			FROM visit
-			         JOIN public.realestate r ON r.idrealestate = visit.idrealestate
-			         JOIN public.typerealestate tr ON tr.idtyperealestate = r.idtyperealestate
-			         JOIN public."user" u ON visit.phonenumbervisitor = u.phonenumber
-			         JOIN (SELECT COUNT(idvisit) AS count
-			               FROM public.visit
-			               WHERE phonenumbervisitor = (SELECT phonenumbervisitor FROM visit WHERE idvisit = %[1]s)
-			                 AND status = 'DONE') AS vc ON TRUE
-			         JOIN (SELECT AVG(note) AS avg
-			               FROM public.visit
-			               WHERE phonenumbervisitor = (SELECT phonenumbervisitor FROM visit WHERE idvisit = %[1]s)
-			                 AND status = 'DONE'
-			                 AND note != 0.0) AS navg ON TRUE
-			WHERE idvisit = %[1]s;`,
-				id)
-
-			row := db.QueryRow(request)
-
-			var visit visitDetails
-			err := row.Scan(&visit.Visit.IDVisit, &visit.Visit.Address.IdAddressGmap, &visit.Visit.Details.Date, &visit.Visit.Details.StartTime, &visit.Visit.Details.EndTime, &visit.Visit.Details.Duration, &visit.Visit.Details.Status, &visit.Visitor.FirstName, &visit.Visitor.LastName, &visit.Visitor.ProfilePicture, &visit.Visitor.VisitCount, &visit.Visitor.NoteAVG, &visit.Visit.Details.Price, &visit.Visit.Details.VisitAccepted, &visit.Visit.Details.CriteriaSent)
-			if err != nil {
-				fmt.Println("💥 Error scanning the row in GetVisit() : ", err)
-				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-					"error": "An error has occurred, please try again later.",
-				})
-			}
-
-			visit.Visit.Address.Address, _ = getAddressFromGMapsID(visit.Visit.Address.IdAddressGmap)
-
-			return c.JSON(visit)
-		} else {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Unauthorized access",
-			})
-		}
-	} else {
-		// Return all the visits
-		if c.Locals("user").(*CustomClaims).Role == "ADMIN" {
-			rows, err := db.Query("SELECT * FROM visit")
-			if err != nil {
-				fmt.Println("💥 Error querying the database in GetVisit() : ", err)
-				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-					"error": "An error has occurred, please try again later.",
-				})
-			}
-
-			defer func(rows *sql.Rows) {
-				err := rows.Close()
-				if err != nil {
-					fmt.Println("💥 Error closing the rows in GetVisit() : ", err)
-					return
-				}
-			}(rows)
-
-			var visits []Visit
-			for rows.Next() {
-				var visit Visit
-				err := rows.Scan(&visit.IdVisit, &visit.PhoneNumberProspect, &visit.PhoneNumberVisitor, &visit.IdRealEstate, &visit.CodeVerification, &visit.StartTime, &visit.Price, &visit.Status, &visit.Note)
-				if err != nil {
-					fmt.Println("💥 Error scanning the rows in GetVisit() : ", err)
-					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-						"error": "An error has occurred, please try again later.",
-					})
-				}
-
-				visits = append(visits, visit)
-			}
-
-			return c.JSON(visits)
-		} else {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Unauthorized access",
-			})
-		}
-	}
-}
-
-// UpdateVisit met à jour une visite existante dans la base de données.
-func UpdateVisit(c *fiber.Ctx) error {
-	id := c.Query("id")
-
-	var visit Visit
-	if err := c.BodyParser(&visit); err != nil {
-		fmt.Println("💥 Error parsing the body in UpdateVisit() : ", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "An error has occurred, please try again later.",
-		})
-	}
-
-	stmt, err := db.Prepare("UPDATE visit SET PhoneNumberProspect=$1, PhoneNumberVisitor=$2, IdRealEstate=$3, CodeVerification=$4, StartTime=$5, Price=$6, Status=$7, Note=$8 WHERE ID=$9")
-	if err != nil {
-		fmt.Println("💥 Error preparing the SQL statement in UpdateVisit() : ", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "An error has occurred, please try again later.",
-		})
-	}
-
-	defer func(stmt *sql.Stmt) {
-		err := stmt.Close()
-		if err != nil {
-			fmt.Println("💥 Error closing the statement in UpdateVisit() : ", err)
-			return
-		}
-	}(stmt)
-
-	_, err = stmt.Exec(visit.PhoneNumberProspect, visit.PhoneNumberVisitor, visit.IdRealEstate, visit.CodeVerification, visit.StartTime, visit.Price, visit.Status, visit.Note, id)
-	if err != nil {
-		fmt.Println("💥 Error executing the SQL statement in UpdateVisit() : ", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "An error has occurred, please try again later.",
-		})
-	}
-
-	return c.SendStatus(fiber.StatusOK)
-}
-
 // DeleteVisit supprime une visite de la base de données.
 func DeleteVisit(c *fiber.Ctx) error {
 	id := c.Query("id")
@@ -213,6 +74,8 @@ func DeleteVisit(c *fiber.Ctx) error {
 
 	return c.SendStatus(fiber.StatusNoContent)
 }
+
+// ============================================= THIS IS CLEAN BELOW ============================================= //
 
 func GetVisitsList(c *fiber.Ctx) error {
 	// Get the number of users
@@ -287,4 +150,189 @@ func GetVisitsList(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(visits)
+}
+
+func GetVisit(c *fiber.Ctx) error {
+	id := strings.TrimSpace(c.Query("id"))
+
+	if id != "" {
+		if hasAuthorizedVisitAccess(c.Locals("user").(*CustomClaims).PhoneNumber, id) {
+			request := fmt.Sprintf(`
+			SELECT idvisit,
+			       r.IdAddressGmap,
+			       Date(StartTime)                                                       AS Date,
+			       TO_CHAR(StartTime, 'HH24hMI')                                         AS StartTime,
+			       TO_CHAR(starttime + tr.duration, 'HH24hMI')                           AS EndTime,
+			       tr.duration,
+			       Status,
+			       FirstName,
+			       UPPER(CONCAT(LEFT(LastName, 1), '.'))                                 AS LastName,
+			       profilepicture,
+			       vc.count                                                              AS VisitCount,
+			       navg.avg                                                              AS NoteAvg,
+			       price,
+			       note,
+			       CASE WHEN status NOT IN ('DONE', 'ACCEPTED') THEN FALSE ELSE TRUE END AS VisitAccepted,
+			       CASE
+			           WHEN (SELECT COUNT(idVisit) FROM public.linkcriteriavisit WHERE idVisit = 135) > 0 THEN TRUE
+			           ELSE FALSE END                                                    AS CriteriaSent
+			FROM visit
+			         JOIN public.realestate r ON r.idrealestate = visit.idrealestate
+			         JOIN public.typerealestate tr ON tr.idtyperealestate = r.idtyperealestate
+			         JOIN public."user" u ON visit.phonenumbervisitor = u.phonenumber
+			         JOIN (SELECT COUNT(idvisit) AS count
+			               FROM public.visit
+			               WHERE phonenumbervisitor = (SELECT phonenumbervisitor FROM visit WHERE idvisit = %[1]s)
+			                 AND status = 'DONE') AS vc ON TRUE
+			         JOIN (SELECT AVG(note) AS avg
+			               FROM public.visit
+			               WHERE phonenumbervisitor = (SELECT phonenumbervisitor FROM visit WHERE idvisit = %[1]s)
+			                 AND status = 'DONE'
+			                 AND note != 0.0) AS navg ON TRUE
+			WHERE idvisit = %[1]s;`,
+				id)
+
+			row := db.QueryRow(request)
+
+			var visit visitDetails
+			err := row.Scan(&visit.Visit.IDVisit, &visit.Visit.Address.IdAddressGmap, &visit.Visit.Details.Date, &visit.Visit.Details.StartTime, &visit.Visit.Details.EndTime, &visit.Visit.Details.Duration, &visit.Visit.Details.Status, &visit.Visitor.FirstName, &visit.Visitor.LastName, &visit.Visitor.ProfilePicture, &visit.Visitor.VisitCount, &visit.Visitor.NoteAVG, &visit.Visit.Details.Price, &visit.Visit.Details.Note, &visit.Visit.Details.VisitAccepted, &visit.Visit.Details.CriteriaSent)
+			if err != nil {
+				fmt.Println("💥 Error scanning the row in GetVisit() : ", err)
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": "An error has occurred, please try again later.",
+				})
+			}
+
+			visit.Visit.Address.Address, _ = getAddressFromGMapsID(visit.Visit.Address.IdAddressGmap)
+
+			return c.JSON(visit)
+		} else {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Unauthorized access",
+			})
+		}
+	} else {
+		// Return all the visits
+		if c.Locals("user").(*CustomClaims).Role == "ADMIN" {
+			rows, err := db.Query("SELECT * FROM visit")
+			if err != nil {
+				fmt.Println("💥 Error querying the database in GetVisit() : ", err)
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": "An error has occurred, please try again later.",
+				})
+			}
+
+			defer func(rows *sql.Rows) {
+				err := rows.Close()
+				if err != nil {
+					fmt.Println("💥 Error closing the rows in GetVisit() : ", err)
+					return
+				}
+			}(rows)
+
+			var visits []Visit
+			for rows.Next() {
+				var visit Visit
+				err := rows.Scan(&visit.IdVisit, &visit.PhoneNumberProspect, &visit.PhoneNumberVisitor, &visit.IdRealEstate, &visit.CodeVerification, &visit.StartTime, &visit.Price, &visit.Status, &visit.Note)
+				if err != nil {
+					fmt.Println("💥 Error scanning the rows in GetVisit() : ", err)
+					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+						"error": "An error has occurred, please try again later.",
+					})
+				}
+
+				visits = append(visits, visit)
+			}
+
+			return c.JSON(visits)
+		} else {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Unauthorized access",
+			})
+		}
+	}
+}
+
+func UpdateVisit(c *fiber.Ctx) error {
+	id := strings.TrimSpace(c.Query("id"))
+
+	/**
+	* To ease the API creation process and protect the safety of the data, a visit can only be updated on 2
+	* fields:
+	* 	- Status
+	* 	- Note
+	*
+	* The other fields are not supposed to be updated by the user. If needed, it will be implemented later.
+	**/
+
+	// TODO: to tightened the security even more, only the prospect should be able to change the note
+
+	if id == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Please provide the ID of the visit to update",
+		})
+	}
+
+	if !hasAuthorizedVisitAccess(c.Locals("user").(*CustomClaims).PhoneNumber, id) {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized access",
+		})
+	}
+
+	var visit Visit
+	if err := c.BodyParser(&visit); err != nil {
+		fmt.Println("💥 Error parsing the body in UpdateVisit() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
+	}
+
+	var updateQuery string
+	var args []interface{}
+
+	placeholderIndex := 1 // Start with placeholder index 1
+
+	if visit.Status != "" {
+		updateQuery += fmt.Sprintf("Status=$%d, ", placeholderIndex)
+		args = append(args, visit.Status)
+		placeholderIndex++
+	}
+
+	if visit.Note != 0 {
+		updateQuery += fmt.Sprintf("Note=$%d, ", placeholderIndex)
+		args = append(args, strconv.FormatFloat(visit.Note, 'f', -1, 64))
+		placeholderIndex++
+	}
+
+	// Remove the trailing comma and space
+	updateQuery = strings.TrimSuffix(updateQuery, ", ")
+
+	query := fmt.Sprintf("UPDATE visit SET %s WHERE idvisit=$%d", updateQuery, len(args)+1)
+	args = append(args, id)
+
+	fmt.Println(query)
+
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		fmt.Println("💥 Error preparing the SQL statement in UpdateVisit() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
+	}
+	defer func(stmt *sql.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			fmt.Println("💥 Error closing the statement in UpdateVisit() : ", err)
+		}
+	}(stmt)
+
+	_, err = stmt.Exec(args...)
+	if err != nil {
+		fmt.Println("💥 Error executing the SQL statement in UpdateVisit() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
 }
