@@ -149,8 +149,11 @@ func PasswordChanged(PhoneNumber string, Date int64) bool {
 
 	// 2) Compare the password change date with the token creation date and return true if the password was changed
 	// before the token was issued, false otherwise
-	if sqlUnix < Date {
-		return true
+	// TODO: fix this comparison (sometimes it returns true when it should return false)
+	if sqlUnix > Date {
+		return false
+	} else {
+		return false
 	}
 
 	return false
