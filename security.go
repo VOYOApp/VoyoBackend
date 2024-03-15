@@ -158,3 +158,27 @@ func PasswordChanged(PhoneNumber string, Date int64) bool {
 
 	return false
 }
+
+func hasAuthorizedVisitAccess(phoneNumber string, idvisit string) bool {
+	request := fmt.Sprintf(`
+		SELECT idvisit
+		FROM "visit"
+		WHERE idvisit = '%[1]s' AND phonenumberprospect = '%[2]s' OR phonenumbervisitor = '%[2]s'
+	`, idvisit, phoneNumber)
+
+	// Execute the request
+	row := db.QueryRow(request)
+	var requestedId string
+	err := row.Scan(&requestedId)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false
+		}
+
+		fmt.Println("💥 Error scanning the row in hasAuthorizedVisitAccess() : ", err)
+		return false
+	}
+
+	return requestedId == idvisit
+}

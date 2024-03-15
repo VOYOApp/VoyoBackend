@@ -47,38 +47,9 @@ func CreateVisit(c *fiber.Ctx) error {
 func GetVisit(c *fiber.Ctx) error {
 	id := strings.TrimSpace(c.Query("id"))
 
-	fmt.Println("ID : ", id)
-
-	type visitDetails struct {
-		Visitor struct {
-			FirstName      string  `json:"firstName"`
-			LastName       string  `json:"lastName"`
-			ProfilePicture string  `json:"profilePicture"`
-			NoteAVG        float32 `json:"noteAVG"`
-			VisitCount     int     `json:"visitCount"`
-			//Distance   int     `json:"distance"`
-		} `json:"visitor"`
-		Visit struct {
-			Address struct {
-				IdAddressGmap string `json:"idAddressGmap"`
-				Address       string `json:"label"`
-			} `json:"address"`
-			Details struct {
-				StartTime     string `json:"startTime"`
-				EndTime       string `json:"endTime"`
-				Date          string `json:"date"`
-				Duration      string `json:"duration"`
-				Status        string `json:"status"`
-				VisitAccepted bool   `json:"visitAccepted"`
-				CriteriaSent  bool   `json:"criteriaSent"`
-				Price         string `json:"price"`
-			} `json:"details"`
-			IDVisit int `json:"id"`
-		} `json:"visit"`
-	}
-
 	if id != "" {
-		request := fmt.Sprintf(`
+		if hasAuthorizedVisitAccess(c.Locals("user").(*CustomClaims).PhoneNumber, id) {
+			request := fmt.Sprintf(`
 			SELECT idvisit,
 			       r.IdAddressGmap,
 			       Date(StartTime)                                                       AS Date,
@@ -110,23 +81,27 @@ func GetVisit(c *fiber.Ctx) error {
 			                 AND status = 'DONE'
 			                 AND note != 0.0) AS navg ON TRUE
 			WHERE idvisit = %[1]s;`,
-			id)
+				id)
 
-		row := db.QueryRow(request)
+			row := db.QueryRow(request)
 
-		var visit visitDetails
-		err := row.Scan(&visit.Visit.IDVisit, &visit.Visit.Address.IdAddressGmap, &visit.Visit.Details.Date, &visit.Visit.Details.StartTime, &visit.Visit.Details.EndTime, &visit.Visit.Details.Duration, &visit.Visit.Details.Status, &visit.Visitor.FirstName, &visit.Visitor.LastName, &visit.Visitor.ProfilePicture, &visit.Visitor.VisitCount, &visit.Visitor.NoteAVG, &visit.Visit.Details.Price, &visit.Visit.Details.VisitAccepted, &visit.Visit.Details.CriteriaSent)
-		if err != nil {
-			fmt.Println("💥 Error scanning the row in GetVisit() : ", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "An error has occurred, please try again later.",
+			var visit visitDetails
+			err := row.Scan(&visit.Visit.IDVisit, &visit.Visit.Address.IdAddressGmap, &visit.Visit.Details.Date, &visit.Visit.Details.StartTime, &visit.Visit.Details.EndTime, &visit.Visit.Details.Duration, &visit.Visit.Details.Status, &visit.Visitor.FirstName, &visit.Visitor.LastName, &visit.Visitor.ProfilePicture, &visit.Visitor.VisitCount, &visit.Visitor.NoteAVG, &visit.Visit.Details.Price, &visit.Visit.Details.VisitAccepted, &visit.Visit.Details.CriteriaSent)
+			if err != nil {
+				fmt.Println("💥 Error scanning the row in GetVisit() : ", err)
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": "An error has occurred, please try again later.",
+				})
+			}
+
+			visit.Visit.Address.Address, _ = getAddressFromGMapsID(visit.Visit.Address.IdAddressGmap)
+
+			return c.JSON(visit)
+		} else {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Unauthorized access",
 			})
 		}
-
-		visit.Visit.Address.Address, _ = getAddressFromGMapsID(visit.Visit.Address.IdAddressGmap)
-
-		return c.JSON(visit)
-
 	} else {
 		// Return all the visits
 		if c.Locals("user").(*CustomClaims).Role == "ADMIN" {

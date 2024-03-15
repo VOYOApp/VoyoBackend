@@ -122,3 +122,31 @@ type googleMapsResponse struct {
 	} `json:"results"`
 	Status string `json:"status"`
 }
+
+type visitDetails struct {
+	Visitor struct {
+		FirstName      string  `json:"firstName"`
+		LastName       string  `json:"lastName"`
+		ProfilePicture string  `json:"profilePicture"`
+		NoteAVG        float32 `json:"noteAVG"`
+		VisitCount     int     `json:"visitCount"`
+		//Distance   int     `json:"distance"`
+	} `json:"visitor"`
+	Visit struct {
+		Address struct {
+			IdAddressGmap string `json:"idAddressGmap"`
+			Address       string `json:"label"`
+		} `json:"address"`
+		Details struct {
+			StartTime     string `json:"startTime"`
+			EndTime       string `json:"endTime"`
+			Date          string `json:"date"`
+			Duration      string `json:"duration"`
+			Status        string `json:"status"`
+			VisitAccepted bool   `json:"visitAccepted"`
+			CriteriaSent  bool   `json:"criteriaSent"`
+			Price         string `json:"price"`
+		} `json:"details"`
+		IDVisit int `json:"id"`
+	} `json:"visit"`
+}
