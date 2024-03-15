@@ -100,7 +100,7 @@ func main() {
 	visit.Post("/", CreateVisit)
 	visit.Put("/", UpdateVisit)
 	visit.Delete("/", DeleteVisit)
-	visit.Get("/upcoming", VerifyJWT, GetUpcomingVisits)
+	visit.Get("/upcoming", VerifyJWT, GetVisitsList)
 
 	// Define routes for "Criteria"
 	criteria := root.Group("/criteria")

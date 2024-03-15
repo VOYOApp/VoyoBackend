@@ -191,8 +191,6 @@ func GetVisitsList(c *fiber.Ctx) error {
 
 	isNot := ""
 
-	fmt.Println("visitType", visitType)
-
 	if visitType != "UPCOMING" {
 		isNot = "NOT"
 	}
