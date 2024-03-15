@@ -173,3 +173,64 @@ func DeleteVisit(c *fiber.Ctx) error {
 
 	return c.SendStatus(fiber.StatusNoContent)
 }
+
+func GetUpcomingVisits(c *fiber.Ctx) error {
+	// Get the number of users
+	phoneNumber := c.Locals("user").(*CustomClaims).PhoneNumber
+	role := c.Locals("user").(*CustomClaims).Role
+
+	searchString := "phoneNumber"
+	if role == "PROSPECT" {
+		searchString = "PhoneNumberProspect"
+	} else {
+		searchString = "PhoneNumberVisitor"
+	}
+
+	request := fmt.Sprintf(`
+		SELECT FirstName, UPPER(CONCAT(LEFT(LastName, 1), '.')) AS LastName, r.IdAddressGmap, StartTime, Status
+		FROM visit
+		         JOIN public."user" u ON visit.phonenumberprospect = u.phonenumber
+		         JOIN public.realestate r ON r.idrealestate = visit.idrealestate
+		WHERE %s = '%s' AND Status IN ('PENDING', 'ACCEPTED')
+`, searchString, phoneNumber)
+
+	rows, err := db.Query(request)
+	if err != nil {
+		fmt.Println("💥 Error querying the database in GetUpcomingVisits() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
+	}
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			fmt.Println("💥 Error closing the rows in GetUpcomingVisits() : ", err)
+			return
+		}
+	}(rows)
+
+	type upcomingVisits struct {
+		FirstName     string `json:"firstName"`
+		LastName      string `json:"lastName"`
+		IdAddressGmap string `json:"idAddressGmap"`
+		StartTime     string `json:"startTime"`
+		Status        string `json:"status"`
+	}
+
+	var visits []upcomingVisits
+
+	for rows.Next() {
+		var visit upcomingVisits
+		err := rows.Scan(&visit.FirstName, &visit.LastName, &visit.IdAddressGmap, &visit.StartTime, &visit.Status)
+		if err != nil {
+			fmt.Println("💥 Error scanning the rows in GetUpcomingVisits() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+		visits = append(visits, visit)
+	}
+
+	return c.JSON(visits)
+}

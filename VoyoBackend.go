@@ -92,6 +92,7 @@ func main() {
 	user.Post("/", CreateUser)
 	user.Put("/", UpdateUser)
 	user.Delete("/", VerifyJWT, DeleteUser)
+	user.Get("/homeStats", VerifyJWT, GetHomeStats)
 
 	// Define routes for "Visit"
 	visit := root.Group("/visit")
@@ -99,6 +100,7 @@ func main() {
 	visit.Post("/", CreateVisit)
 	visit.Put("/", UpdateVisit)
 	visit.Delete("/", DeleteVisit)
+	visit.Get("/upcoming", VerifyJWT, GetUpcomingVisits)
 
 	// Define routes for "Criteria"
 	criteria := root.Group("/criteria")

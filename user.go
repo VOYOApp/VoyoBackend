@@ -6,6 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/utils"
 	"golang.org/x/crypto/bcrypt"
+	"math/rand"
 	"strconv"
 )
 
@@ -329,4 +330,159 @@ func DeleteUser(c *fiber.Ctx) error {
 	// TODO: instead of removing the user, set all data to null or User deleted in the database to avoid errors on foreign keys
 
 	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func GetHomeStats(c *fiber.Ctx) error {
+	// Get the number of users
+	role := c.Locals("user").(*CustomClaims).Role
+
+	if role == "PROSPECT" {
+		// 0) Struct to store all data
+		type HomeStats struct {
+			ProgrammedVisits int `json:"programmed_visits"`
+			UnreadMessages   int `json:"unread_messages"`
+			VisitedDone      int `json:"visited_done"`
+			WaitingReviews   int `json:"waiting_reviews"`
+		}
+
+		var homeStats HomeStats
+
+		// 1) Programmed visits
+		stmt, err := db.Prepare(`SELECT COUNT(*) FROM visit WHERE PhoneNumberProspect = $1 AND Status IN ('PROGRAMMED', 'ACCEPTED') AND StartTime > NOW()`)
+		if err != nil {
+			fmt.Println("💥 Error preparing the request in GetHomeStats() programmed visits: ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+		defer func(stmt *sql.Stmt) {
+			err := stmt.Close()
+			if err != nil {
+				fmt.Println("💥 Error closing the statement in GetHomeStats() programmed visits")
+				return
+			}
+		}(stmt)
+
+		err = stmt.QueryRow(c.Locals("user").(*CustomClaims).PhoneNumber).Scan(&homeStats.ProgrammedVisits)
+		if err != nil {
+			fmt.Println("💥 Error executing the request in GetHomeStats() programmed visits : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+
+		// 2) Unread messages
+		homeStats.UnreadMessages = rand.Int() % 10 // TODO: get the real number by requesting the firebase database
+
+		// 3) Visits done
+		stmt, err = db.Prepare(`SELECT COUNT(*) FROM visit WHERE PhoneNumberProspect = $1 AND Status = 'DONE'`)
+		if err != nil {
+			fmt.Println("💥 Error preparing the request in GetHomeStats() Visits done : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+
+		err = stmt.QueryRow(c.Locals("user").(*CustomClaims).PhoneNumber).Scan(&homeStats.VisitedDone)
+		if err != nil {
+			fmt.Println("💥 Error executing the request in GetHomeStats() Visits done : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+
+		// 4) Waiting reviews
+		stmt, err = db.Prepare(`SELECT COUNT(*) FROM visit WHERE PhoneNumberProspect = $1 AND Status = 'DONE' AND Note IS NULL OR  Note = 0.0`)
+		if err != nil {
+			fmt.Println("💥 Error preparing the request in GetHomeStats() Waiting reviews: ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+
+		err = stmt.QueryRow(c.Locals("user").(*CustomClaims).PhoneNumber).Scan(&homeStats.WaitingReviews)
+		if err != nil {
+			fmt.Println("💥 Error executing the request in GetHomeStats() Waiting reviews : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+
+		return c.JSON(homeStats)
+	} else if role == "VISITOR" {
+		type HomeStats struct {
+			UpcomingVisits  int `json:"upcoming_visits"`
+			UnreadMessages  int `json:"unread_messages"`
+			AwatingApproval int `json:"awaiting_approval"`
+			WaitingReviews  int `json:"waiting_reviews"`
+		}
+
+		var homeStats HomeStats
+
+		// 1) Upcoming visits
+		stmt, err := db.Prepare(`SELECT COUNT(*) FROM visit WHERE PhoneNumberVisitor = $1 AND Status IN ('PROGRAMMED', 'ACCEPTED') AND StartTime > NOW()`)
+		if err != nil {
+			fmt.Println("💥 Error preparing the request in GetHomeStats() upcoming visits: ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+
+		defer func(stmt *sql.Stmt) {
+			err := stmt.Close()
+			if err != nil {
+				fmt.Println("💥 Error closing the statement in GetHomeStats() upcoming visits")
+				return
+			}
+		}(stmt)
+
+		err = stmt.QueryRow(c.Locals("user").(*CustomClaims).PhoneNumber).Scan(&homeStats.UpcomingVisits)
+		if err != nil {
+			fmt.Println("💥 Error executing the request in GetHomeStats() upcoming visits : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+
+		// 2) Unread messages
+		homeStats.UnreadMessages = rand.Int() % 10 // TODO: get the real number by requesting the firebase database
+
+		// 3) Awaiting approval
+		stmt, err = db.Prepare(`SELECT COUNT(*) FROM visit WHERE PhoneNumberVisitor = $1 AND Status = 'PROGRAMMED'`)
+		if err != nil {
+			fmt.Println("💥 Error preparing the request in GetHomeStats() awaiting approval: ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+
+		err = stmt.QueryRow(c.Locals("user").(*CustomClaims).PhoneNumber).Scan(&homeStats.AwatingApproval)
+		if err != nil {
+			fmt.Println("💥 Error executing the request in GetHomeStats() awaiting approval : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+
+		// 4) Waiting reviews
+		stmt, err = db.Prepare(`SELECT COUNT(*) FROM visit WHERE PhoneNumberVisitor = $1 AND Status = 'DONE' AND Note IS NULL OR  Note = 0.0`)
+		if err != nil {
+			fmt.Println("💥 Error preparing the request in GetHomeStats() Waiting reviews: ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+
+		err = stmt.QueryRow(c.Locals("user").(*CustomClaims).PhoneNumber).Scan(&homeStats.WaitingReviews)
+		if err != nil {
+			fmt.Println("💥 Error executing the request in GetHomeStats() Waiting reviews : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+
+		return c.JSON(homeStats)
+	}
+
+	return c.SendStatus(fiber.StatusOK)
 }
