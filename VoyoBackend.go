@@ -96,7 +96,7 @@ func main() {
 
 	// Define routes for "Visit"
 	visit := root.Group("/visit")
-	visit.Get("/", GetVisit)
+	visit.Get("/", VerifyJWT, GetVisit)
 	visit.Post("/", CreateVisit)
 	visit.Put("/", UpdateVisit)
 	visit.Delete("/", DeleteVisit)
