@@ -65,36 +65,35 @@ func CreateUser(c *fiber.Ctx) error {
 
 		user.X = &coordinates.Lat
 		user.Y = &coordinates.Lng
-	} else {
-		fmt.Println("=> Address is nil or not provided")
-	}
 
-	request := fmt.Sprintf(`
+		request := fmt.Sprintf(`
 	UPDATE public.user 
 	SET X=%[1]s, Y=%[2]s, geom=ST_Buffer(ST_SetSRID(ST_MakePoint(%[1]s, %[2]s), %[3]s), 500) 
 	WHERE PhoneNumber='%[4]s'`,
-		strconv.FormatFloat(*user.X, 'f', -1, 64),
-		strconv.FormatFloat(*user.Y, 'f', -1, 64),
-		strconv.FormatFloat(*user.Radius, 'f', -1, 64),
-		user.PhoneNumber,
-	)
+			strconv.FormatFloat(*user.X, 'f', -1, 64),
+			strconv.FormatFloat(*user.Y, 'f', -1, 64),
+			strconv.FormatFloat(*user.Radius, 'f', -1, 64),
+			user.PhoneNumber,
+		)
 
-	rows, err := db.Query(request)
-	if err != nil {
-		fmt.Println("💥 Error executing the request in CreateUser() : ", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "An error has occurred, please try again later.",
-		})
-	}
-
-	// Close the rows
-	defer func(rows *sql.Rows) {
-		err := rows.Close()
+		rows, err := db.Query(request)
 		if err != nil {
-			fmt.Println("💥 Error closing the rows in CreateUser()")
+			fmt.Println("💥 Error executing the request in CreateUser() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
 		}
-	}(rows)
 
+		// Close the rows
+		defer func(rows *sql.Rows) {
+			err := rows.Close()
+			if err != nil {
+				fmt.Println("💥 Error closing the rows in CreateUser()")
+			}
+		}(rows)
+	} else {
+		fmt.Println("=> Address is nil or not provided")
+	}
 	return c.Status(fiber.StatusCreated).SendString("User successfully created")
 }
 
