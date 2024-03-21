@@ -115,6 +115,8 @@ func main() {
 	linkcriteriavisit.Post("/", CreateLinkCriteriaVisit)   // TODO: To check
 	linkcriteriavisit.Delete("/", DeleteLinkCriteriaVisit) // TODO: To check
 
+	root.Post("/search", VerifyJWT, SearchUsers)
+
 	// Security routes
 	security := root.Group("/security")
 	security.Get("/", VerifyJWT, func(c *fiber.Ctx) error {
