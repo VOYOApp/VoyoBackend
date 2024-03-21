@@ -1,6 +1,9 @@
 package main
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"database/sql"
+	"github.com/gofiber/fiber/v2"
+)
 
 func GetRole(c *fiber.Ctx) error {
 	id := c.Query("id")
@@ -28,7 +31,12 @@ func GetRole(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			return
+		}
+	}(rows)
 
 	var roles []Role
 	for rows.Next() {

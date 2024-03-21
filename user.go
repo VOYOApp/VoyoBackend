@@ -67,9 +67,9 @@ func CreateUser(c *fiber.Ctx) error {
 		user.Y = &coordinates.Lng
 
 		request := fmt.Sprintf(`
-	UPDATE public.user 
-	SET X=%[1]s, Y=%[2]s, geom=ST_Buffer(ST_SetSRID(ST_MakePoint(%[1]s, %[2]s), %[3]s), 500) 
-	WHERE PhoneNumber='%[4]s'`,
+			UPDATE public.user 
+				SET X=%[1]s, Y=%[2]s, geom=ST_Buffer(st_transform(ST_SetSRID(ST_MakePoint(%[2]s, %[1]s), 4326), 2154), %[3]s, 'quad_segs=100')
+			WHERE PhoneNumber='%[4]s'`,
 			strconv.FormatFloat(*user.X, 'f', -1, 64),
 			strconv.FormatFloat(*user.Y, 'f', -1, 64),
 			strconv.FormatFloat(*user.Radius, 'f', -1, 64),
