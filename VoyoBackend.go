@@ -98,9 +98,9 @@ func main() {
 	visit := root.Group("/visit")
 	visit.Get("/", VerifyJWT, GetVisit)
 	visit.Patch("/", VerifyJWT, UpdateVisit)
-	visit.Post("/", CreateVisit)                     // TODO: To check
-	visit.Delete("/", DeleteVisit)                   // TODO: To check
-	visit.Get("/upcoming", VerifyJWT, GetVisitsList) // TODO: To check
+	visit.Post("/", CreateVisit)   // TODO: To check
+	visit.Delete("/", DeleteVisit) // TODO: To check
+	visit.Get("/upcoming", VerifyJWT, GetVisitsList)
 
 	// Define routes for "Criteria"
 	criteria := root.Group("/criteria")
