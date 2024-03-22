@@ -8,6 +8,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"math/rand"
 	"strconv"
+	"strings"
 )
 
 // CreateUser crée un nouvel utilisateur dans la base de données.
@@ -253,11 +254,12 @@ func LoginUser(c *fiber.Ctx) error {
 // GetUser récupère un utilisateur spécifique à partir de son ID, ou tous les utilisateurs s'il n'y a pas d'ID spécifié.
 func GetUser(c *fiber.Ctx) error {
 	id := c.Query("id")
-
+	phoneNumber := c.Locals("user").(*CustomClaims).PhoneNumber
+	println("phoneNumber: ", phoneNumber)
 	// Si un ID est spécifié dans les paramètres de la requête, on récupère uniquement cet utilisateur spécifique.
-	if id != "" {
+	if phoneNumber != "" {
 		var user User
-
+		//id = strings.ReplaceAll("+"+id, " ", "")
 		stmt, err := db.Prepare(`SELECT PhoneNumber, FirstName, LastName, Email, Password, IdRole, Biography, ProfilePicture, Pricing, IdAddressGMap, Radius FROM "user" WHERE PhoneNumber = $1`)
 		if err != nil {
 			fmt.Println("💥 Error preparing the request to get one user in GetUser() : ", err)
@@ -267,42 +269,68 @@ func GetUser(c *fiber.Ctx) error {
 		}
 		defer stmt.Close()
 
-		row := stmt.QueryRow(id)
+		row := stmt.QueryRow(phoneNumber)
 		err = row.Scan(&user.PhoneNumber, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.IdRole, &user.Biography, &user.ProfilePicture, &user.Pricing, &user.IdAddressGMap, &user.Radius)
 		if err != nil {
+			fmt.Println("💥 Error scanning the row in GetUser() : ", err)
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 				"error": "User not found",
 			})
 		}
-
 		return c.JSON(user)
-	}
-
-	// Si aucun ID n'est spécifié, on récupère tous les utilisateurs.
-	rows, err := db.Query(`SELECT PhoneNumber, FirstName, LastName, Email, Password, IdRole, Biography, ProfilePicture, Pricing, IdAddressGMap, Radius FROM "user"`)
-	if err != nil {
-		fmt.Println("💥 Error preparing the request in GetUser() : ", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "An error has occurred, please try again later.",
-		})
-	}
-	defer rows.Close()
-
-	var users []User
-	for rows.Next() {
+	} else if id != "" {
 		var user User
-		err := rows.Scan(&user.PhoneNumber, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.IdRole, &user.Biography, &user.ProfilePicture, &user.Pricing, &user.IdAddressGMap, &user.Radius)
+		id = strings.ReplaceAll("+"+id, " ", "")
+		stmt, err := db.Prepare(`SELECT PhoneNumber, FirstName, LastName, Biography, ProfilePicture, Pricing FROM "user" WHERE PhoneNumber = $1`)
 		if err != nil {
-			fmt.Println("💥 Error executing the request in GetUser() : ", err)
+			fmt.Println("💥 Error preparing the request to get one user in GetUser() : ", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "An error has occurred, please try again later.",
 			})
 		}
-		users = append(users, user)
+		defer stmt.Close()
+
+		row := stmt.QueryRow(id)
+		err = row.Scan(&user.PhoneNumber, &user.FirstName, &user.LastName, &user.Biography, &user.ProfilePicture, &user.Pricing)
+		if err != nil {
+			fmt.Println("💥 Error scanning the row in GetUser() : ", err)
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "User not found",
+			})
+		}
+		return c.JSON(user)
 	}
 
-	return c.JSON(users)
+	return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+		"error": "Please provide an ID",
+	})
 }
+
+// Si aucun ID n'est spécifié, on récupère tous les utilisateurs.
+//rows, err := db.Query(`SELECT PhoneNumber, FirstName, LastName, Email, Password, IdRole, Biography, ProfilePicture, Pricing, IdAddressGMap, Radius FROM "user"`)
+//if err != nil {
+//	fmt.Println("💥 Error preparing the request in GetUser() : ", err)
+//	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+//		"error": "An error has occurred, please try again later.",
+//	})
+//}
+//defer rows.Close()
+//
+//var users []User
+//for rows.Next() {
+//	var user User
+//	err := rows.Scan(&user.PhoneNumber, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.IdRole, &user.Biography, &user.ProfilePicture, &user.Pricing, &user.IdAddressGMap, &user.Radius)
+//	if err != nil {
+//		fmt.Println("💥 Error executing the request in GetUser() : ", err)
+//		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+//			"error": "An error has occurred, please try again later.",
+//		})
+//	}
+//	users = append(users, user)
+//}
+
+//return c.JSON(users)
+//}
 
 // UpdateUser met à jour un utilisateur existant dans la base de données.
 func UpdateUser(c *fiber.Ctx) error {
