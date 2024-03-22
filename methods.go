@@ -86,8 +86,9 @@ func SearchUsers(c *fiber.Ctx) error {
 	// Get the query parameter
 	x := c.Query("x")
 	y := c.Query("y")
+
 	date := c.Query("date")
-	duration := c.Query("duration")
+	idTypeRealEstate := c.Query("duration")
 
 	request := fmt.Sprintf(`
 		SELECT DISTINCT u.FirstName,
@@ -98,15 +99,14 @@ func SearchUsers(c *fiber.Ctx) error {
                 u.phonenumber,
                 CASE
                     WHEN
-                        (ST_Distance(u.geom, st_transform(ST_SetSRID(ST_MakePoint(%[2], %[1]), 4326), 2154)) /
-                         1000)::numeric % 100 >= 50
-                        THEN CEIL(ST_Distance(u.geom, st_transform(ST_SetSRID(ST_MakePoint(%[2], %[1]), 4326),
+                        (ST_Distance(u.geom, st_transform(ST_SetSRID(ST_MakePoint(%[2]s, %[1]s), 4326), 2154)) /
+                         1000)::numeric %% 100 >= 50
+                        THEN CEIL(ST_Distance(u.geom, st_transform(ST_SetSRID(ST_MakePoint(%[2]s, %[1]s), 4326),
                                                                    2154)) / 1000 / 100.0) * 100
                     ELSE FLOOR(ST_Distance(u.geom,
-                                           st_transform(ST_SetSRID(ST_MakePoint(%[2], %[1]), 4326), 2154)) /
+                                           st_transform(ST_SetSRID(ST_MakePoint(%[2]s, %[1]s), 4326), 2154)) /
                                1000 / 100.0) * 100
                     END                                 AS rounded_distance
-
 		FROM "user" u
 		         JOIN public.availability a ON u.phonenumber = a.phonenumber
 		         JOIN LATERAL (SELECT AVG(note) AS avg
@@ -116,36 +116,42 @@ func SearchUsers(c *fiber.Ctx) error {
 		                         AND note != 0.0) AS navg ON TRUE
 		WHERE st_intersects(
 		        u.geom,
-		        st_transform(ST_SetSRID(ST_MakePoint(%[2], %[1]), 4326), 2154))
+		        st_transform(ST_SetSRID(ST_MakePoint(%[2]s, %[1]s), 4326), 2154))
 		  AND ((
 		           repeat = 'DAILY'
-		               AND availability::timestamp <= '%[3]'::timestamp
-		               AND EXTRACT(HOUR FROM availability) <= EXTRACT(HOUR FROM '%[3]'::timestamp)
-		               AND EXTRACT(MINUTE FROM availability) <= EXTRACT(MINUTE FROM '%[3]'::timestamp)
-		               AND availability::time + duration::interval >= '%[4]'::time
+		               AND availability::timestamp <= '%[3]s'::timestamp
+		               AND EXTRACT(HOUR FROM availability) <= EXTRACT(HOUR FROM '%[3]s'::timestamp)
+		               AND EXTRACT(MINUTE FROM availability) <= EXTRACT(MINUTE FROM '%[3]s'::timestamp)
+		               AND availability::time + duration::interval >= '%[3]s'::TIME +
+		                                                              CAST((SELECT duration FROM typerealestate WHERE idtyperealestate = 4) AS INTERVAL)
 		           ) OR (
 		           repeat = 'WEEKLY'
-		               AND availability::timestamp <= '%[3]'::timestamp
-		               AND EXTRACT(DOW FROM availability) = EXTRACT(DOW FROM '%[3]'::timestamp)
-		               AND EXTRACT(HOUR FROM availability) <= EXTRACT(HOUR FROM '%[3]'::timestamp)
-		               AND EXTRACT(MINUTE FROM availability) <= EXTRACT(MINUTE FROM '%[3]'::timestamp)
-		               AND availability::time + duration::interval >= '%[4]'::time
+		               AND availability::timestamp <= '%[3]s'::timestamp
+		               AND EXTRACT(DOW FROM availability) = EXTRACT(DOW FROM '%[3]s'::timestamp)
+		               AND EXTRACT(HOUR FROM availability) <= EXTRACT(HOUR FROM '%[3]s'::timestamp)
+		               AND EXTRACT(MINUTE FROM availability) <= EXTRACT(MINUTE FROM '%[3]s'::timestamp)
+		               AND availability::time + duration::interval >= '%[3]s'::TIME +
+		                                                              CAST((SELECT duration FROM typerealestate WHERE idtyperealestate = 4) AS INTERVAL)
 		           ) OR (
-		            repeat = 'MONTHLY'
-		                AND availability::timestamp <= '%[3]'::timestamp
-		                AND EXTRACT(DAY FROM availability) = EXTRACT(DAY FROM '%[3]'::timestamp)
-		                AND EXTRACT(HOUR FROM availability) <= EXTRACT(HOUR FROM '%[3]'::timestamp)
-		                AND EXTRACT(MINUTE FROM availability) <= EXTRACT(MINUTE FROM '%[3]'::timestamp)
-		                AND availability::time + duration::interval >= '%[4]'::time
+		           repeat = 'MONTHLY'
+		               AND availability::timestamp <= '%[3]s'::timestamp
+		               AND EXTRACT(DAY FROM availability) = EXTRACT(DAY FROM '%[3]s'::timestamp)
+		               AND EXTRACT(HOUR FROM availability) <= EXTRACT(HOUR FROM '%[3]s'::timestamp)
+		               AND EXTRACT(MINUTE FROM availability) <= EXTRACT(MINUTE FROM '%[3]s'::timestamp)
+		               AND availability::time + duration::interval >= '%[3]s'::TIME +
+		                                                              CAST((SELECT duration FROM typerealestate WHERE idtyperealestate = 4) AS INTERVAL)
 		           ) OR (
 		           repeat = 'YEARLY'
-		               AND availability::timestamp <= '%[3]'::timestamp
-		               AND EXTRACT(YEAR FROM availability) <= EXTRACT(YEAR FROM '%[3]'::timestamp)
-		               AND EXTRACT(HOUR FROM availability) <= EXTRACT(HOUR FROM '%[3]'::timestamp)
-		               AND EXTRACT(MINUTE FROM availability) <= EXTRACT(MINUTE FROM '%[3]'::timestamp)
-		               AND availability::time + duration::interval >= '%[4]'::time
+		               AND availability::timestamp <= '%[3]s'::timestamp
+		               AND EXTRACT(YEAR FROM availability) <= EXTRACT(YEAR FROM '%[3]s'::timestamp)
+		               AND EXTRACT(HOUR FROM availability) <= EXTRACT(HOUR FROM '%[3]s'::timestamp)
+		               AND EXTRACT(MINUTE FROM availability) <= EXTRACT(MINUTE FROM '%[3]s'::timestamp)
+		               AND availability::time + duration::interval >= '%[3]s'::TIME +
+		                                                              CAST((SELECT duration FROM typerealestate WHERE idtyperealestate = 4) AS INTERVAL)
 		           ))`,
-		x, y, date, duration)
+		x, y, date, idTypeRealEstate)
+
+	fmt.Println(request)
 
 	rows, err := db.Query(request)
 	if err != nil {
@@ -163,17 +169,27 @@ func SearchUsers(c *fiber.Ctx) error {
 		}
 	}(rows)
 
-	var users []User
+	type SearchUser struct {
+		FirstName       string          `json:"firstName"`
+		LastName        string          `json:"lastName"`
+		ProfilePicture  string          `json:"profilePicture"`
+		NoteAvg         sql.NullFloat64 `json:"noteAvg"`
+		Pricing         float64         `json:"pricing"`
+		PhoneNumber     string          `json:"phoneNumber"`
+		RoundedDistance float64         `json:"roundedDistance"`
+	}
+
+	var users []SearchUser
 	for rows.Next() {
-		var u User
-		err := rows.Scan(&u.PhoneNumber, &u.FirstName, &u.LastName, &u.Email, &u.Password, &u.IdRole, &u.Biography, &u.ProfilePicture, &u.Pricing, &u.IdAddressGMap, &u.Radius, &u.X, &u.Y, &u.Geom)
+		var user SearchUser
+		err := rows.Scan(&user.FirstName, &user.LastName, &user.ProfilePicture, &user.NoteAvg, &user.Pricing, &user.PhoneNumber, &user.RoundedDistance)
 		if err != nil {
 			fmt.Println("💥 Error scanning the rows in SearchUsers() : ", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "An error has occurred, please try again later.",
 			})
 		}
-		users = append(users, u)
+		users = append(users, user)
 	}
 
 	return c.JSON(users)
