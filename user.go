@@ -255,30 +255,8 @@ func LoginUser(c *fiber.Ctx) error {
 func GetUser(c *fiber.Ctx) error {
 	id := c.Query("id")
 	phoneNumber := c.Locals("user").(*CustomClaims).PhoneNumber
-	println("phoneNumber: ", phoneNumber)
 	// Si un ID est spécifié dans les paramètres de la requête, on récupère uniquement cet utilisateur spécifique.
-	if phoneNumber != "" {
-		var user User
-		//id = strings.ReplaceAll("+"+id, " ", "")
-		stmt, err := db.Prepare(`SELECT PhoneNumber, FirstName, LastName, Email, Password, IdRole, Biography, ProfilePicture, Pricing, IdAddressGMap, Radius FROM "user" WHERE PhoneNumber = $1`)
-		if err != nil {
-			fmt.Println("💥 Error preparing the request to get one user in GetUser() : ", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "An error has occurred, please try again later.",
-			})
-		}
-		defer stmt.Close()
-
-		row := stmt.QueryRow(phoneNumber)
-		err = row.Scan(&user.PhoneNumber, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.IdRole, &user.Biography, &user.ProfilePicture, &user.Pricing, &user.IdAddressGMap, &user.Radius)
-		if err != nil {
-			fmt.Println("💥 Error scanning the row in GetUser() : ", err)
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"error": "User not found",
-			})
-		}
-		return c.JSON(user)
-	} else if id != "" {
+	if id != "" {
 		var user User
 		id = strings.ReplaceAll("+"+id, " ", "")
 		stmt, err := db.Prepare(`SELECT PhoneNumber, FirstName, LastName, Biography, ProfilePicture, Pricing FROM "user" WHERE PhoneNumber = $1`)
@@ -292,6 +270,27 @@ func GetUser(c *fiber.Ctx) error {
 
 		row := stmt.QueryRow(id)
 		err = row.Scan(&user.PhoneNumber, &user.FirstName, &user.LastName, &user.Biography, &user.ProfilePicture, &user.Pricing)
+		if err != nil {
+			fmt.Println("💥 Error scanning the row in GetUser() : ", err)
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "User not found",
+			})
+		}
+		return c.JSON(user)
+	} else if phoneNumber != "" {
+		var user User
+		//id = strings.ReplaceAll("+"+id, " ", "")
+		stmt, err := db.Prepare(`SELECT FirstName, LastName, Email, Biography, ProfilePicture, Pricing, Radius, x, y FROM "user" WHERE PhoneNumber = $1`)
+		if err != nil {
+			fmt.Println("💥 Error preparing the request to get one user in GetUser() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+		defer stmt.Close()
+
+		row := stmt.QueryRow(phoneNumber)
+		err = row.Scan(&user.FirstName, &user.LastName, &user.Email, &user.Biography, &user.ProfilePicture, &user.Pricing, &user.Radius, &user.X, &user.Y)
 		if err != nil {
 			fmt.Println("💥 Error scanning the row in GetUser() : ", err)
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
