@@ -93,7 +93,7 @@ func GetVisitsList(c *fiber.Ctx) error {
 
 	isNot := ""
 
-	if visitType != "UPCOMING" {
+	if visitType != "PASSED" {
 		isNot = "NOT"
 	}
 
