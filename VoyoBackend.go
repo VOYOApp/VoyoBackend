@@ -100,13 +100,13 @@ func main() {
 	visit.Patch("/", VerifyJWT, UpdateVisit)
 	visit.Post("/", CreateVisit)   // TODO: To check
 	visit.Delete("/", DeleteVisit) // TODO: To check
-	visit.Get("/upcoming", VerifyJWT, GetVisitsList)
+	visit.Get("/homeList", VerifyJWT, GetVisitsList)
 
 	// Define routes for "Criteria"
 	criteria := root.Group("/criteria")
-	criteria.Get("/", GetCriteria)       // TODO: To check
-	criteria.Post("/", CreateCriteria)   // TODO: To check
-	criteria.Put("/", UpdateCriteria)    // TODO: To check
+	criteria.Get("/", VerifyJWT, GetCriteria)
+	criteria.Post("/", VerifyJWT, CreateCriteria)
+	criteria.Patch("/", VerifyJWT, UpdateCriteria)
 	criteria.Delete("/", DeleteCriteria) // TODO: To check
 
 	// Define routes for "linkCriteriaVisit"
