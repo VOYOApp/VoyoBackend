@@ -44,13 +44,13 @@ func getCoordinatesFromAddress(address string) (googleMapsCoordinates, error) {
 }
 
 // Function to get coordinates from address using the Google Maps Geocoding API
-func getAddressFromGMapsID(googleMapsID string) (string, error) {
+func getAddressFromGMapsID(googleMapsID string) (googleMapsResponse, error) {
 	apiKey := os.Getenv("GOOGLE_MAPS_API_KEY")
 	url := fmt.Sprintf("https://maps.googleapis.com/maps/api/geocode/json?key=%s&place_id=%s", apiKey, googleMapsID)
 	// Make HTTP request
 	response, err := http.Get(url)
 	if err != nil {
-		return "", err
+		return googleMapsResponse{}, err
 	}
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
@@ -63,23 +63,23 @@ func getAddressFromGMapsID(googleMapsID string) (string, error) {
 	// Read and parse the response body
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		return "", err
+		return googleMapsResponse{}, err
 	}
 
 	// Parse the JSON response
 	var result googleMapsResponse
 	if err := json.Unmarshal(body, &result); err != nil {
-		return "", err
+		return googleMapsResponse{}, err
 	}
 
 	// Check if the response status is OK
 	if result.Status != "OK" || len(result.Results) == 0 {
-		return "", fmt.Errorf("Geocoding API request failed")
+		return googleMapsResponse{}, fmt.Errorf("Geocoding API request failed")
 	}
 
 	// Extract coordinates from the first result
-	address := result.Results[0].FormattedAddress
-	return address, nil
+	//address := result.Results[0].FormattedAddress
+	return result, nil
 }
 
 func SearchUsers(c *fiber.Ctx) error {

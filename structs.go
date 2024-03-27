@@ -134,8 +134,8 @@ type visitDetails struct {
 	} `json:"visitor"`
 	Visit struct {
 		Address struct {
-			IdAddressGmap string `json:"idAddressGmap"`
-			Address       string `json:"label"`
+			IdAddressGmap string `json:"idAddressGMap"`
+			googleMapsResponse
 		} `json:"address"`
 		Details struct {
 			StartTime     string  `json:"startTime"`
@@ -148,6 +148,7 @@ type visitDetails struct {
 			Price         string  `json:"price"`
 			Note          float32 `json:"note"`
 		} `json:"details"`
-		IDVisit int `json:"id"`
+		IDVisit   int        `json:"id"`
+		Criterias []Criteria `json:"criterias"`
 	} `json:"visit"`
 }

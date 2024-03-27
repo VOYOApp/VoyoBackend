@@ -8,7 +8,6 @@ import (
 	"strings"
 )
 
-// CreateVisit crée une nouvelle visite dans la base de données.
 func CreateVisit(c *fiber.Ctx) error {
 	var visit Visit
 	if err := c.BodyParser(&visit); err != nil {
@@ -144,7 +143,8 @@ func GetVisitsList(c *fiber.Ctx) error {
 			})
 		}
 
-		visit.Address, _ = getAddressFromGMapsID(visit.IdAddressGmap)
+		gmap, _ := getAddressFromGMapsID(visit.IdAddressGmap)
+		visit.Address = gmap.Results[0].FormattedAddress
 
 		visits = append(visits, visit)
 	}
@@ -203,7 +203,37 @@ func GetVisit(c *fiber.Ctx) error {
 				})
 			}
 
-			visit.Visit.Address.Address, _ = getAddressFromGMapsID(visit.Visit.Address.IdAddressGmap)
+			visit.Visit.Address.googleMapsResponse, _ = getAddressFromGMapsID(visit.Visit.Address.IdAddressGmap)
+
+			// Select all criterias for the visit
+			rows, err := db.Query("SELECT criteria.idcriteria, criteria.criteria, criteriaanswer, photo, video, photorequired, videorequired FROM public.criteria join public.linkcriteriavisit on criteria.idcriteria = linkcriteriavisit.idcriteria where idvisit = $1", id)
+			if err != nil {
+				fmt.Println("💥 Error querying the database in GetVisit() : ", err)
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": "An error has occurred, please try again later.",
+				})
+			}
+
+			defer func(rows *sql.Rows) {
+				err := rows.Close()
+				if err != nil {
+					fmt.Println("💥 Error closing the rows in GetVisit() : ", err)
+					return
+				}
+			}(rows)
+
+			for rows.Next() {
+				var crit Criteria
+				err := rows.Scan(&crit.ID, &crit.Criteria, &crit.CriteriaAnswer, &crit.Photo, &crit.Video, &crit.PhotoRequired, &crit.VideoRequired)
+				if err != nil {
+					fmt.Println("💥 Error scanning the rows in GetVisit() : ", err)
+					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+						"error": "An error has occurred, please try again later.",
+					})
+				}
+
+				visit.Visit.Criterias = append(visit.Visit.Criterias, crit)
+			}
 
 			return c.JSON(visit)
 		} else {
@@ -214,7 +244,7 @@ func GetVisit(c *fiber.Ctx) error {
 	} else {
 		// Return all the visits
 		if c.Locals("user").(*CustomClaims).Role == "ADMIN" {
-			rows, err := db.Query("SELECT * FROM visit")
+			rows, err := db.Query("SELECT idvisit, phonenumberprospect, phonenumbervisitor, idrealestate, codeverification, starttime, price, status, note FROM visit")
 			if err != nil {
 				fmt.Println("💥 Error querying the database in GetVisit() : ", err)
 				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
