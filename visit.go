@@ -9,36 +9,77 @@ import (
 )
 
 func CreateVisit(c *fiber.Ctx) error {
-	var visit Visit
-	if err := c.BodyParser(&visit); err != nil {
+	if c.Locals("user").(*CustomClaims).Role == "VISITOR" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized access. You need to be a prospect to create a visit.",
+		})
+	}
+
+	type VisitToCreate struct {
+		Visit
+		Criterias []Criteria `json:"criterias"`
+	}
+
+	var vtc VisitToCreate
+	if err := c.BodyParser(&vtc); err != nil {
 		fmt.Println("💥 Error parsing the body in CreateVisit() : ", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "An error has occurred, please try again later.",
 		})
 	}
 
-	stmt, err := db.Prepare("INSERT INTO visit (PhoneNumberProspect, PhoneNumberVisitor, IdRealEstate, CodeVerification, StartTime, Price, Status, Note) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)")
+	fmt.Println(vtc)
+
+	if vtc.PhoneNumberVisitor == "" || vtc.StartTime.IsZero() || vtc.Price == 0 || (vtc.IdAddressGMap == "" && (vtc.X == 0 && vtc.Y == 0)) || vtc.IdTypeRealEstate == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Please provide all the required fields.",
+		})
+	}
+
+	// TODO: x or y is empty and if so fill them by doing a request to gmap
+
+	// Check if the user exists
+	if !checkUserExists(vtc.PhoneNumberVisitor) || !checkUserRole(vtc.PhoneNumberVisitor, "VISITOR") {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "The visitor does not exist or is not a visitor.",
+		})
+	}
+
+	// 1) Prepare the request
+	stmt, err := db.Prepare("INSERT INTO visit (phonenumberprospect, phonenumbervisitor, codeverification, starttime, price, status, note, idaddressgmap, idtyperealestate, x, y) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)")
 	if err != nil {
 		fmt.Println("💥 Error preparing the SQL statement in CreateVisit() : ", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "An error has occurred, please try again later.",
 		})
 	}
-	defer func(stmt *sql.Stmt) {
-		err := stmt.Close()
-		if err != nil {
-			fmt.Println("💥 Error closing the statement in CreateVisit() : ", err)
-			return
-		}
-	}(stmt)
 
-	_, err = stmt.Exec(visit.PhoneNumberProspect, visit.PhoneNumberVisitor, visit.IdRealEstate, visit.CodeVerification, visit.StartTime, visit.Price, visit.Status, visit.Note)
+	// 2) Execute the request
+	_, err = stmt.Exec(c.Locals("user").(*CustomClaims).PhoneNumber, vtc.PhoneNumberVisitor, vtc.CodeVerification, vtc.StartTime, vtc.Price, vtc.Status, vtc.Note, vtc.IdAddressGMap, vtc.IdTypeRealEstate, vtc.X, vtc.Y)
 	if err != nil {
 		fmt.Println("💥 Error executing the SQL statement in CreateVisit() : ", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "An error has occurred, please try again later.",
 		})
 	}
+
+	//// 3) Get the ID of the visit
+	//row := db.QueryRow("SELECT idvisit FROM visit WHERE phonenumbervisitor = $1 AND starttime = $2", vtc.PhoneNumberVisitor, vtc.StartTime)
+	//if err != nil {
+	//	fmt.Println("💥 Error querying the database in CreateVisit() : ", err)
+	//	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+	//		"error": "An error has occurred, please try again later.",
+	//	})
+	//}
+	//
+	//var id int
+	//err = row.Scan(&id)
+	//if err != nil {
+	//	fmt.Println("💥 Error scanning the row in CreateVisit() : ", err)
+	//	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+	//		"error": "An error has occurred, please try again later.",
+	//	})
+	//}
 
 	return c.Status(fiber.StatusCreated).SendString("Visite créée avec succès")
 }
@@ -245,8 +286,9 @@ func GetVisit(c *fiber.Ctx) error {
 		}
 	} else {
 		// Return all the visits
+		// TODO: adapt the values retrieved to the new db
 		if c.Locals("user").(*CustomClaims).Role == "ADMIN" {
-			rows, err := db.Query("SELECT idvisit, phonenumberprospect, phonenumbervisitor, idrealestate, codeverification, starttime, price, status, note FROM visit")
+			rows, err := db.Query("SELECT idvisit, phonenumberprospect, phonenumbervisitor, codeverification, starttime, price, status, note FROM visit")
 			if err != nil {
 				fmt.Println("💥 Error querying the database in GetVisit() : ", err)
 				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -265,7 +307,7 @@ func GetVisit(c *fiber.Ctx) error {
 			var visits []Visit
 			for rows.Next() {
 				var visit Visit
-				err := rows.Scan(&visit.IdVisit, &visit.PhoneNumberProspect, &visit.PhoneNumberVisitor, &visit.IdRealEstate, &visit.CodeVerification, &visit.StartTime, &visit.Price, &visit.Status, &visit.Note)
+				err := rows.Scan(&visit.IdVisit, &visit.PhoneNumberProspect, &visit.PhoneNumberVisitor, &visit.CodeVerification, &visit.StartTime, &visit.Price, &visit.Status, &visit.Note)
 				if err != nil {
 					fmt.Println("💥 Error scanning the rows in GetVisit() : ", err)
 					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
