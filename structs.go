@@ -22,12 +22,6 @@ type TypeRealEstate struct {
 	Duration         time.Time `json:"duration"`
 }
 
-type RealEstate struct {
-	IdRealEstate     int    `json:"id"`
-	IdAddressGMap    string `json:"address_id"`
-	IdTypeRealEstate int    `json:"type_id"`
-}
-
 type Role struct {
 	IdRole int    `json:"id"`
 	Label  string `json:"label"`
@@ -82,12 +76,15 @@ type Visit struct {
 	IdVisit             int       `json:"id"`
 	PhoneNumberProspect string    `json:"phone_number_prospect"`
 	PhoneNumberVisitor  string    `json:"phone_number_visitor"`
-	IdRealEstate        int       `json:"real_estate_id"`
 	CodeVerification    int       `json:"verification_code"`
 	StartTime           time.Time `json:"start_time"`
 	Price               float64   `json:"price"`
 	Status              string    `json:"status"`
 	Note                float64   `json:"note"`
+	IdAddressGMap       string    `json:"address_id"`
+	IdTypeRealEstate    int       `json:"type_real_estate_id"`
+	X                   float64   `json:"x"`
+	Y                   float64   `json:"y"`
 }
 
 type Criteria struct {

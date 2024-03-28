@@ -57,13 +57,6 @@ func main() {
 		return c.SendString("1.0.0")
 	})
 
-	// Define routes for "Realestate"
-	realestate := root.Group("/realestate")
-	realestate.Get("/", GetRealEstate)       // TODO: To check
-	realestate.Post("/", CreateRealEstate)   // TODO: To check
-	realestate.Put("/", UpdateRealEstate)    // TODO: To check
-	realestate.Delete("/", DeleteRealEstate) // TODO: To check
-
 	// Define routes for "TypeRealeState"
 	typerealestate := root.Group("/typerealestate")
 	typerealestate.Get("/", GetTypeRealEstate)       // TODO: To check
@@ -87,7 +80,7 @@ func main() {
 
 	// Define routes for "User"
 	user := root.Group("/user")
-	user.Get("/", VerifyJWT, GetUser)
+	user.Get("/", GetUser)        // TODO: To check 1 and add verifyJWT
 	user.Get("/login", LoginUser) // TODO: To check
 	user.Post("/", CreateUser)    // TODO: To check
 	user.Put("/", UpdateUser)     // TODO: To check
@@ -96,18 +89,18 @@ func main() {
 
 	// Define routes for "Visit"
 	visit := root.Group("/visit")
-	visit.Get("/", VerifyJWT, GetVisit)
-	visit.Patch("/", VerifyJWT, UpdateVisit)
-	visit.Post("/", VerifyJWT, CreateVisit) // TODO: To check
-	visit.Delete("/", DeleteVisit)          // TODO: To check
+	visit.Get("/", VerifyJWT, GetVisit)      // TODO: To check 1
+	visit.Patch("/", VerifyJWT, UpdateVisit) // TODO: To check 1
+	visit.Post("/", VerifyJWT, CreateVisit)  // TODO: Checking
+	visit.Delete("/", DeleteVisit)           // TODO: To check
 	visit.Get("/homeList", VerifyJWT, GetVisitsList)
 
 	// Define routes for "Criteria"
 	criteria := root.Group("/criteria")
-	criteria.Get("/", VerifyJWT, GetCriteria)
-	criteria.Post("/", VerifyJWT, CreateCriteria)
-	criteria.Patch("/", VerifyJWT, UpdateCriteria)
-	criteria.Delete("/", DeleteCriteria) // TODO: To check
+	criteria.Get("/", VerifyJWT, GetCriteria)      // TODO: To check 2
+	criteria.Post("/", VerifyJWT, CreateCriteria)  // TODO: To check 2
+	criteria.Patch("/", VerifyJWT, UpdateCriteria) // TODO: To check 2
+	criteria.Delete("/", DeleteCriteria)           // TODO: To check
 
 	// Define routes for "linkCriteriaVisit"
 	linkcriteriavisit := root.Group("/linkcriteriavisit")
