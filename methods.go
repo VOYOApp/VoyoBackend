@@ -90,6 +90,7 @@ func SearchUsers(c *fiber.Ctx) error {
 	date := c.Query("date")
 	idTypeRealEstate := c.Query("duration")
 
+	// TODO: vérifier que l'utilisateur n'a pas déjà une visite de programmée sur le créneau indiqué
 	request := fmt.Sprintf(`
 		SELECT DISTINCT u.FirstName,
                 UPPER(CONCAT(LEFT(u.LastName, 1), '.')) AS LastName,

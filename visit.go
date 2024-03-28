@@ -92,16 +92,16 @@ func GetVisitsList(c *fiber.Ctx) error {
 
 	isNot := ""
 
-	if visitType != "PASSED" {
+	if visitType == "PASSED" {
 		isNot = "NOT"
 	}
 
 	request := fmt.Sprintf(`
-		SELECT FirstName, UPPER(CONCAT(LEFT(LastName, 1), '.')) AS LastName, r.IdAddressGmap, StartTime, Status, Note, visit.idvisit
+		SELECT FirstName, UPPER(CONCAT(LEFT(LastName, 1), '.')) AS LastName, visit.idaddressgmap, StartTime, (starttime + duration) AS EndTime, Duration, visit.status, Note, visit.idvisit
 		FROM visit
 		         JOIN public."user" u ON visit.phonenumberprospect = u.phonenumber
-		         JOIN public.realestate r ON r.idrealestate = visit.idrealestate
-		WHERE %s = '%s' AND Status %s IN ('PENDING', 'ACCEPTED')
+		         JOIN typerealestate t ON visit.idtyperealestate = t.idtyperealestate
+		WHERE %s = '%s' AND visit.Status %s IN ('PENDING', 'ACCEPTED')
 `, searchString, phoneNumber, isNot)
 
 	rows, err := db.Query(request)
@@ -126,6 +126,8 @@ func GetVisitsList(c *fiber.Ctx) error {
 		IdAddressGmap string  `json:"idAddressGmap"`
 		Address       string  `json:"address"`
 		StartTime     string  `json:"startTime"`
+		EndTime       string  `json:"endTime"`
+		Duration      string  `json:"duration"`
 		Status        string  `json:"status"`
 		Note          float64 `json:"note"`
 		IDVisit       int     `json:"idVisit"`
@@ -135,7 +137,7 @@ func GetVisitsList(c *fiber.Ctx) error {
 
 	for rows.Next() {
 		var visit upcomingVisits
-		err := rows.Scan(&visit.FirstName, &visit.LastName, &visit.IdAddressGmap, &visit.StartTime, &visit.Status, &visit.Note, &visit.IDVisit)
+		err := rows.Scan(&visit.FirstName, &visit.LastName, &visit.IdAddressGmap, &visit.StartTime, &visit.EndTime, &visit.Duration, &visit.Status, &visit.Note, &visit.IDVisit)
 		if err != nil {
 			fmt.Println("💥 Error scanning the rows in GetUpcomingVisits() : ", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

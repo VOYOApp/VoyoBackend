@@ -29,7 +29,7 @@ func CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	stmt, err := db.Prepare(`INSERT INTO "user" (PhoneNumber, FirstName, LastName, Email, Password, IdRole, Biography, ProfilePicture, Pricing, IdAddressGMap, Radius) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`)
+	stmt, err := db.Prepare(`INSERT INTO "user" (PhoneNumber, FirstName, LastName, Email, Password, IdRole, Biography, ProfilePicture, Pricing, IdAddressGMap, Radius, Status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`)
 	if err != nil {
 		fmt.Println("💥 Error preparing the request in CreateUser() : ", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -44,7 +44,13 @@ func CreateUser(c *fiber.Ctx) error {
 		}
 	}(stmt)
 
-	_, err = stmt.Exec(user.PhoneNumber, user.FirstName, user.LastName, user.Email, hashedPassword, user.IdRole, user.Biography, user.ProfilePicture, user.Pricing, user.IdAddressGMap, user.Radius)
+	status := "VALIDATED"
+
+	if user.IdRole == 1 {
+		status = "PENDING_VALIDATION"
+	}
+
+	_, err = stmt.Exec(user.PhoneNumber, user.FirstName, user.LastName, user.Email, hashedPassword, user.IdRole, user.Biography, user.ProfilePicture, user.Pricing, user.IdAddressGMap, user.Radius, status)
 	if err != nil {
 		fmt.Println("💥 Error executing the request in CreateUser() : ", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
