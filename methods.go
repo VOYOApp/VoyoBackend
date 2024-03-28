@@ -195,3 +195,21 @@ func SearchUsers(c *fiber.Ctx) error {
 
 	return c.JSON(users)
 }
+
+func checkUserExists(phoneNumber string) bool {
+	var exists bool
+	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM \"user\" WHERE phonenumber = $1)", phoneNumber).Scan(&exists)
+	if err != nil {
+		return false
+	}
+	return exists
+}
+
+func checkUserRole(phoneNumber string, role string) bool {
+	var exists bool
+	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM \"user\" WHERE phonenumber = $1 AND idrole = (SELECT idrole FROM role WHERE label = $2))", phoneNumber, role).Scan(&exists)
+	if err != nil {
+		return false
+	}
+	return exists
+}
