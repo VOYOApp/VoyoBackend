@@ -45,6 +45,8 @@ func CreateVisit(c *fiber.Ctx) error {
 		})
 	}
 
+	// TODO: Check if the user is available or not
+
 	// 1) Prepare the request
 	stmt, err := db.Prepare("INSERT INTO visit (phonenumberprospect, phonenumbervisitor, codeverification, starttime, price, status, note, idaddressgmap, idtyperealestate, x, y) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)")
 	if err != nil {
@@ -63,23 +65,107 @@ func CreateVisit(c *fiber.Ctx) error {
 		})
 	}
 
-	//// 3) Get the ID of the visit
-	//row := db.QueryRow("SELECT idvisit FROM visit WHERE phonenumbervisitor = $1 AND starttime = $2", vtc.PhoneNumberVisitor, vtc.StartTime)
-	//if err != nil {
-	//	fmt.Println("💥 Error querying the database in CreateVisit() : ", err)
-	//	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-	//		"error": "An error has occurred, please try again later.",
-	//	})
-	//}
-	//
-	//var id int
-	//err = row.Scan(&id)
-	//if err != nil {
-	//	fmt.Println("💥 Error scanning the row in CreateVisit() : ", err)
-	//	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-	//		"error": "An error has occurred, please try again later.",
-	//	})
-	//}
+	// 3) Get the ID of the visit
+	row := db.QueryRow("SELECT idvisit FROM visit WHERE phonenumbervisitor = $1 AND starttime = $2", vtc.PhoneNumberVisitor, vtc.StartTime)
+	if err != nil {
+		fmt.Println("💥 Error querying the database in CreateVisit() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
+	}
+
+	var id int
+	err = row.Scan(&id)
+	if err != nil {
+		fmt.Println("💥 Error scanning the row in CreateVisit() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
+	}
+
+	fmt.Println(id)
+
+	// Loop through the criterias and insert them in the database
+	for _, crit := range vtc.Criterias {
+		stmt, err := db.Prepare(`
+				INSERT INTO criteria (criteria, criteriaAnswer, photoRequired, photo, videoRequired, video, phoneNumber, reusable)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			`)
+		if err != nil {
+			fmt.Println("💥 Error preparing the SQL statement in CreateCriteria() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+
+		defer func(stmt *sql.Stmt) {
+			err := stmt.Close()
+			if err != nil {
+				fmt.Println("💥 Error closing the statement in CreateCriteria() : ", err)
+				return
+			}
+		}(stmt)
+
+		_, err = stmt.Exec(
+			crit.Criteria,
+			crit.CriteriaAnswer,
+			crit.PhotoRequired,
+			crit.Photo,
+			crit.VideoRequired,
+			crit.Video,
+			c.Locals("user").(*CustomClaims).PhoneNumber, // Retrieve the phone number from the context (middleware
+			crit.Reusable,
+		)
+		if err != nil {
+			fmt.Println("💥 Error executing the SQL statement in CreateCriteria() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+
+		// Get the new criteria id
+		row := db.QueryRow("SELECT idcriteria FROM criteria WHERE criteria = $1 AND criteriaanswer = $2 AND photo = $3 AND video = $4 AND phonenumber = $5", crit.Criteria, crit.CriteriaAnswer, crit.Photo, crit.Video, c.Locals("user").(*CustomClaims).PhoneNumber)
+		if err != nil {
+			fmt.Println("💥 Error querying the database in CreateVisit() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+
+		var idCriteria int
+		err = row.Scan(&idCriteria)
+		if err != nil {
+			fmt.Println("💥 Error scanning the row in CreateVisit() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+
+		// Insert the link between the criteria and the visit
+		stmt, err = db.Prepare("INSERT INTO linkcriteriavisit (idcriteria, idvisit) VALUES ($1, $2)")
+		if err != nil {
+			fmt.Println("💥 Error preparing the SQL statement in CreateVisit() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+
+		defer func(stmt *sql.Stmt) {
+			err := stmt.Close()
+			if err != nil {
+				fmt.Println("💥 Error closing the statement in CreateVisit() : ", err)
+				return
+			}
+		}(stmt)
+
+		_, err = stmt.Exec(idCriteria, id)
+		if err != nil {
+			fmt.Println("💥 Error executing the SQL statement in CreateVisit() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+	}
 
 	return c.Status(fiber.StatusCreated).SendString("Visite créée avec succès")
 }
