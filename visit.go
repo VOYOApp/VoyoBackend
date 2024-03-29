@@ -142,9 +142,11 @@ func GetVisitsList(c *fiber.Ctx) error {
 				"error": "An error has occurred, please try again later.",
 			})
 		}
-
+		//TODO Améliorer
 		gmap, _ := getAddressFromGMapsID(visit.IdAddressGmap)
-		visit.Address = gmap.Results[0].FormattedAddress
+		if len(gmap.Results) > 0 {
+			visit.Address = gmap.Results[0].FormattedAddress
+		}
 
 		visits = append(visits, visit)
 	}

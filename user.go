@@ -257,8 +257,10 @@ func GetUser(c *fiber.Ctx) error {
 	phoneNumber := c.Locals("user").(*CustomClaims).PhoneNumber
 	// Si un ID est spécifié dans les paramètres de la requête, on récupère uniquement cet utilisateur spécifique.
 	if id != "" {
+		//TODO Fix bug avec l'id qui est mal formaté ++33612345678 si postman, +33612345678 sur Voyo = problème
 		var user User
 		id = strings.ReplaceAll("+"+id, " ", "")
+		//fmt.Println("ID: ", id)
 		stmt, err := db.Prepare(`SELECT PhoneNumber, FirstName, LastName, Biography, ProfilePicture, Pricing FROM "user" WHERE PhoneNumber = $1`)
 		if err != nil {
 			fmt.Println("💥 Error preparing the request to get one user in GetUser() : ", err)
