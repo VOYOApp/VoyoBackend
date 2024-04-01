@@ -97,8 +97,8 @@ func main() {
 
 	// Define routes for "Criteria"
 	criteria := root.Group("/criteria")
-	criteria.Get("/", VerifyJWT, GetCriteria)      // TODO: To check 2
-	criteria.Post("/", VerifyJWT, CreateCriteria)  // TODO: To check 2
+	criteria.Get("/", VerifyJWT, GetCriteria)
+	criteria.Post("/", VerifyJWT, CreateCriteria)
 	criteria.Patch("/", VerifyJWT, UpdateCriteria) // TODO: To check 2
 	criteria.Delete("/", DeleteCriteria)           // TODO: To check
 

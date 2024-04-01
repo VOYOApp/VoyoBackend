@@ -59,12 +59,10 @@ func GetCriteria(c *fiber.Ctx) error {
 	id := c.Query("id")
 	idVisit := c.Query("idVisit")
 
-	// TODO: check if the user has access to the criteria
-
 	// Prepare SQL statement
 	var query string
 	var args []interface{}
-	if id != "" {
+	if id != "" && hasAuthorizedCriteriaAccess(c.Locals("user").(*CustomClaims).PhoneNumber, id) {
 		query = `
             SELECT idCriteria, criteria, criteriaAnswer, photoRequired, photo, videoRequired, video, reusable
             FROM criteria

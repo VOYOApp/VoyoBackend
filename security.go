@@ -186,8 +186,9 @@ func hasAuthorizedVisitAccess(phoneNumber string, idVisit string) bool {
 func hasAuthorizedCriteriaAccess(phoneNumber string, idCriteria string) bool {
 	request := fmt.Sprintf(`
 		SELECT idCriteria
-		FROM "criteria"
-		WHERE idcriteria = '%[1]s' AND phonenumber = '%[2]s'
+		FROM linkcriteriavisit 
+		    JOIN visit ON linkcriteriavisit.idVisit = visit.idVisit
+		WHERE idcriteria = '%[1]s' AND (phonenumberprospect = '%[2]s' OR phonenumbervisitor = '%[2]s')
 	`, idCriteria, phoneNumber)
 
 	// Execute the request
