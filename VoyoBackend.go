@@ -80,11 +80,11 @@ func main() {
 
 	// Define routes for "User"
 	user := root.Group("/user")
-	user.Get("/", GetUser)        // TODO: To check 1 and add verifyJWT
-	user.Get("/login", LoginUser) // TODO: To check
-	user.Post("/", CreateUser)    // TODO: To check
-	user.Put("/", UpdateUser)     // TODO: To check
-	user.Delete("/", DeleteUser)  // TODO: To check
+	user.Get("/", VerifyJWT, GetUser) // TODO: To check 1 and add verifyJWT
+	user.Get("/login", LoginUser)     // TODO: To check
+	user.Post("/", CreateUser)        // TODO: To check
+	user.Put("/", UpdateUser)         // TODO: To check
+	user.Delete("/", DeleteUser)      // TODO: To check
 	user.Get("/homeStats", VerifyJWT, GetHomeStats)
 
 	// Define routes for "Visit"
