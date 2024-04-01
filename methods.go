@@ -115,7 +115,8 @@ func SearchUsers(c *fiber.Ctx) error {
 		                       WHERE phonenumbervisitor = u.phonenumber
 		                         AND status = 'DONE'
 		                         AND note != 0.0) AS navg ON TRUE
-		WHERE st_intersects(
+		WHERE u.idrole = 1
+		  AND st_intersects(
 		        u.geom,
 		        st_transform(ST_SetSRID(ST_MakePoint(%[2]s, %[1]s), 4326), 2154))
 		  AND ((
@@ -151,8 +152,6 @@ func SearchUsers(c *fiber.Ctx) error {
 		                                                              CAST((SELECT duration FROM typerealestate WHERE idtyperealestate = 4) AS INTERVAL)
 		           ))`,
 		x, y, date, idTypeRealEstate)
-
-	fmt.Println(request)
 
 	rows, err := db.Query(request)
 	if err != nil {
@@ -191,6 +190,69 @@ func SearchUsers(c *fiber.Ctx) error {
 			})
 		}
 		users = append(users, user)
+	}
+
+	// If there is no user, return an empty array
+	if len(users) == 0 {
+		query2 := fmt.Sprintf(`
+			SELECT DISTINCT u.FirstName,
+			                UPPER(CONCAT(LEFT(u.LastName, 1), '.')) AS LastName,
+			                u.profilepicture,
+			                COALESCE(navg.avg, 0)                   AS NoteAvg,
+			                u.pricing,
+			                u.phonenumber,
+			                COALESCE(CASE
+			                    WHEN
+			                        (ST_Distance(u.geom, st_transform(
+			                                ST_SetSRID(ST_MakePoint(%[2]s, %[1]s), 4326), 2154)) /
+			                         1000)::numeric %% 100 >= 50
+			                        THEN CEIL(ST_Distance(u.geom, st_transform(
+			                            ST_SetSRID(ST_MakePoint(%[2]s, %[1]s), 4326),
+			                            2154)) / 1000 / 100.0) * 100
+			                    ELSE FLOOR(ST_Distance(u.geom,
+			                                           st_transform(
+			                                                   ST_SetSRID(ST_MakePoint(%[2]s, %[1]s), 4326),
+			                                                   2154)) /
+			                               1000 / 100.0) * 100
+			                    END, 0)                                  AS rounded_distance
+			FROM "user" u
+			         JOIN public.availability a ON u.phonenumber = a.phonenumber
+			         JOIN LATERAL (SELECT AVG(note) AS avg
+			                       FROM public.visit
+			                       WHERE phonenumbervisitor = u.phonenumber
+			                         AND status = 'DONE'
+			                         AND note != 0.0) AS navg ON TRUE
+			WHERE u.idrole = 1
+			ORDER BY rounded_distance ASC
+			LIMIT 20`, x, y)
+
+		rows2, err := db.Query(query2)
+		if err != nil {
+			fmt.Println("💥 Error querying the database in SearchUsers() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+
+		defer func(rows2 *sql.Rows) {
+			err := rows2.Close()
+			if err != nil {
+				fmt.Println("💥 Error closing the rows in SearchUsers() : ", err)
+				return
+			}
+		}(rows2)
+
+		for rows2.Next() {
+			var user SearchUser
+			err := rows2.Scan(&user.FirstName, &user.LastName, &user.ProfilePicture, &user.NoteAvg, &user.Pricing, &user.PhoneNumber, &user.RoundedDistance)
+			if err != nil {
+				fmt.Println("💥 Error scanning the rows in SearchUsers() : ", err)
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": "An error has occurred, please try again later.",
+				})
+			}
+			users = append(users, user)
+		}
 	}
 
 	return c.JSON(users)
