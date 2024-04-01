@@ -28,8 +28,7 @@ func CreateVisit(c *fiber.Ctx) error {
 		})
 	}
 
-	fmt.Println(vtc)
-
+	// TODO: remove the price from this request and calculate it on the backend to prevent any manipulation from the user
 	if vtc.PhoneNumberVisitor == "" || vtc.StartTime.IsZero() || vtc.Price == 0 || (vtc.IdAddressGMap == "" && (vtc.X == 0 && vtc.Y == 0)) || vtc.IdTypeRealEstate == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Please provide all the required fields.",
@@ -82,8 +81,6 @@ func CreateVisit(c *fiber.Ctx) error {
 			"error": "An error has occurred, please try again later.",
 		})
 	}
-
-	fmt.Println(id)
 
 	// Loop through the criterias and insert them in the database
 	for _, crit := range vtc.Criterias {
@@ -288,27 +285,26 @@ func GetVisit(c *fiber.Ctx) error {
 		if hasAuthorizedVisitAccess(c.Locals("user").(*CustomClaims).PhoneNumber, id) {
 			request := fmt.Sprintf(`
 			SELECT idvisit,
-			       r.IdAddressGmap,
+			       u.idaddressgmap,
 			       Date(StartTime)                                                       AS Date,
 			       TO_CHAR(StartTime, 'HH24hMI')                                         AS StartTime,
 			       TO_CHAR(starttime + tr.duration, 'HH24hMI')                           AS EndTime,
 			       tr.duration,
-			       Status,
+			       v.Status,
 			       FirstName,
 			       UPPER(CONCAT(LEFT(LastName, 1), '.'))                                 AS LastName,
 			       profilepicture,
 			       vc.count                                                              AS VisitCount,
-			       navg.avg                                                              AS NoteAvg,
+			       COALESCE(navg.avg, 0)                                                              AS NoteAvg,
 			       price,
 			       note,
-			       CASE WHEN status NOT IN ('DONE', 'ACCEPTED') THEN FALSE ELSE TRUE END AS VisitAccepted,
+			       CASE WHEN v.status NOT IN ('DONE', 'ACCEPTED') THEN FALSE ELSE TRUE END AS VisitAccepted,
 			       CASE
 			           WHEN (SELECT COUNT(idVisit) FROM public.linkcriteriavisit WHERE idVisit = 135) > 0 THEN TRUE
 			           ELSE FALSE END                                                    AS CriteriaSent
-			FROM visit
-			         JOIN public.realestate r ON r.idrealestate = visit.idrealestate
-			         JOIN public.typerealestate tr ON tr.idtyperealestate = r.idtyperealestate
-			         JOIN public."user" u ON visit.phonenumbervisitor = u.phonenumber
+			FROM visit v
+			         JOIN public.typerealestate tr ON v.idtyperealestate = tr.idtyperealestate
+			         JOIN public."user" u ON v.phonenumbervisitor = u.phonenumber
 			         JOIN (SELECT COUNT(idvisit) AS count
 			               FROM public.visit
 			               WHERE phonenumbervisitor = (SELECT phonenumbervisitor FROM visit WHERE idvisit = %[1]s)
@@ -469,8 +465,6 @@ func UpdateVisit(c *fiber.Ctx) error {
 
 	query := fmt.Sprintf("UPDATE visit SET %s WHERE idvisit=$%d", updateQuery, len(args)+1)
 	args = append(args, id)
-
-	fmt.Println(query)
 
 	stmt, err := db.Prepare(query)
 	if err != nil {

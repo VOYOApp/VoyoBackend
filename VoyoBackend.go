@@ -89,10 +89,10 @@ func main() {
 
 	// Define routes for "Visit"
 	visit := root.Group("/visit")
-	visit.Get("/", VerifyJWT, GetVisit)      // TODO: To check 1
-	visit.Patch("/", VerifyJWT, UpdateVisit) // TODO: To check 1
-	visit.Post("/", VerifyJWT, CreateVisit)  // TODO: Checking
-	visit.Delete("/", DeleteVisit)           // TODO: To check
+	visit.Get("/", VerifyJWT, GetVisit)
+	visit.Patch("/", VerifyJWT, UpdateVisit)
+	visit.Post("/", VerifyJWT, CreateVisit)
+	visit.Delete("/", DeleteVisit) // TODO: To check
 	visit.Get("/homeList", VerifyJWT, GetVisitsList)
 
 	// Define routes for "Criteria"
@@ -102,7 +102,7 @@ func main() {
 	criteria.Patch("/", VerifyJWT, UpdateCriteria) // TODO: To check 2
 	criteria.Delete("/", DeleteCriteria)           // TODO: To check
 
-	// Define routes for "linkCriteriaVisit"
+	// Define routes for "linkCriteriaVisit" TODO: maybe will be deleted because a criteria is linked to a visit when creating the visit
 	linkcriteriavisit := root.Group("/linkcriteriavisit")
 	linkcriteriavisit.Get("/", GetLinkCriteriaVisit)       // TODO: To check
 	linkcriteriavisit.Post("/", CreateLinkCriteriaVisit)   // TODO: To check

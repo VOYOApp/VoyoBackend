@@ -260,7 +260,8 @@ func LoginUser(c *fiber.Ctx) error {
 // GetUser récupère un utilisateur spécifique à partir de son ID, ou tous les utilisateurs s'il n'y a pas d'ID spécifié.
 func GetUser(c *fiber.Ctx) error {
 	id := c.Query("id")
-	phoneNumber := c.Locals("user").(*CustomClaims).PhoneNumber
+	phoneNumber := ""
+	//phoneNumber := c.Locals("user").(*CustomClaims).PhoneNumber
 	// Si un ID est spécifié dans les paramètres de la requête, on récupère uniquement cet utilisateur spécifique.
 	if id != "" {
 		var user User
@@ -304,11 +305,44 @@ func GetUser(c *fiber.Ctx) error {
 			})
 		}
 		return c.JSON(user)
+	} else {
+		// Select all users
+		rows, err := db.Query(`SELECT PhoneNumber, FirstName, LastName, Email, Biography, ProfilePicture, Pricing, Radius, x, y FROM "user"`)
+		if err != nil {
+			fmt.Println("💥 Error querying the database in GetUser() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+
+		}
+
+		defer func(rows *sql.Rows) {
+			err := rows.Close()
+			if err != nil {
+				fmt.Println("💥 Error closing the rows in GetUser()")
+				return
+			}
+		}(rows)
+
+		var users []User
+		for rows.Next() {
+			var user User
+			err := rows.Scan(&user.PhoneNumber, &user.FirstName, &user.LastName, &user.Email, &user.Biography, &user.ProfilePicture, &user.Pricing, &user.Radius, &user.X, &user.Y)
+			if err != nil {
+				fmt.Println("💥 Error scanning the rows in GetUser() : ", err)
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": "An error has occurred, please try again later.",
+				})
+			}
+			users = append(users, user)
+		}
+
+		return c.JSON(users)
 	}
 
-	return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-		"error": "Please provide an ID",
-	})
+	//return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+	//	"error": "Please provide an ID",
+	//})
 }
 
 // Si aucun ID n'est spécifié, on récupère tous les utilisateurs.
