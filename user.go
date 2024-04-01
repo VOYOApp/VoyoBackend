@@ -8,7 +8,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"math/rand"
 	"strconv"
-	"strings"
 )
 
 // CreateUser crée un nouvel utilisateur dans la base de données.
@@ -266,7 +265,7 @@ func GetUser(c *fiber.Ctx) error {
 	if id != "" {
 		//TODO Fix bug avec l'id qui est mal formaté ++33612345678 si postman, +33612345678 sur Voyo = problème
 		var user User
-		id = strings.ReplaceAll("+"+id, " ", "")
+		//id = strings.ReplaceAll("+"+id, " ", "")
 		//fmt.Println("ID: ", id)
 		stmt, err := db.Prepare(`SELECT PhoneNumber, FirstName, LastName, Biography, ProfilePicture, Pricing FROM "user" WHERE PhoneNumber = $1`)
 		if err != nil {
