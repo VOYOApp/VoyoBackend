@@ -98,6 +98,8 @@ func SearchUsers(c *fiber.Ctx) error {
                 navg.avg                                AS NoteAvg,
                 u.pricing,
                 u.phonenumber,
+                COALESCE(u.biography, ''),
+                COALESCE((SELECT COUNT(*) FROM public.visit WHERE phonenumbervisitor = u.phonenumber AND status = 'DONE'), 0) AS nbVisitsDone,
 			    COALESCE(u.radius, 0),
 			    COALESCE(u.x, 0),
 			    COALESCE(u.y, 0),
@@ -179,6 +181,8 @@ func SearchUsers(c *fiber.Ctx) error {
 		NoteAvg         sql.NullFloat64 `json:"noteAvg"`
 		Pricing         float64         `json:"pricing"`
 		PhoneNumber     string          `json:"phoneNumber"`
+		Biography       string          `json:"biography"`
+		NumberOfVisits  int             `json:"numberOfVisits"`
 		Radius          float64         `json:"radius"`
 		X               float64         `json:"x"`
 		Y               float64         `json:"y"`
@@ -188,7 +192,7 @@ func SearchUsers(c *fiber.Ctx) error {
 	var users []SearchUser
 	for rows.Next() {
 		var user SearchUser
-		err := rows.Scan(&user.FirstName, &user.LastName, &user.ProfilePicture, &user.NoteAvg, &user.Pricing, &user.PhoneNumber, &user.Radius, &user.X, &user.Y, &user.RoundedDistance)
+		err := rows.Scan(&user.FirstName, &user.LastName, &user.ProfilePicture, &user.NoteAvg, &user.Pricing, &user.PhoneNumber, &user.Biography, &user.NumberOfVisits, &user.Radius, &user.X, &user.Y, &user.RoundedDistance)
 		if err != nil {
 			fmt.Println("💥 Error scanning the rows in SearchUsers() : ", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -207,6 +211,8 @@ func SearchUsers(c *fiber.Ctx) error {
 			                COALESCE(navg.avg, 0)                   AS NoteAvg,
 			                u.pricing,
 			                u.phonenumber,
+               				COALESCE(u.biography, ''),
+                			COALESCE((SELECT COUNT(*) FROM public.visit WHERE phonenumbervisitor = u.phonenumber AND status = 'DONE'), 0) AS nbVisitsDone,
 			                COALESCE(u.radius, 0),
 			                COALESCE(u.x, 0),
 			                COALESCE(u.y, 0),
@@ -253,7 +259,7 @@ func SearchUsers(c *fiber.Ctx) error {
 
 		for rows2.Next() {
 			var user SearchUser
-			err := rows2.Scan(&user.FirstName, &user.LastName, &user.ProfilePicture, &user.NoteAvg, &user.Pricing, &user.PhoneNumber, &user.Radius, &user.X, &user.Y, &user.RoundedDistance)
+			err := rows2.Scan(&user.FirstName, &user.LastName, &user.ProfilePicture, &user.NoteAvg, &user.Pricing, &user.PhoneNumber, &user.Biography, &user.NumberOfVisits, &user.Radius, &user.X, &user.Y, &user.RoundedDistance)
 			if err != nil {
 				fmt.Println("💥 Error scanning the rows in SearchUsers() : ", err)
 				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
