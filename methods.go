@@ -98,6 +98,9 @@ func SearchUsers(c *fiber.Ctx) error {
                 navg.avg                                AS NoteAvg,
                 u.pricing,
                 u.phonenumber,
+			    COALESCE(u.radius, 0),
+			    COALESCE(u.x, 0),
+			    COALESCE(u.y, 0),
                 CASE
                     WHEN
                         (ST_Distance(u.geom, st_transform(ST_SetSRID(ST_MakePoint(%[2]s, %[1]s), 4326), 2154)) /
@@ -176,13 +179,16 @@ func SearchUsers(c *fiber.Ctx) error {
 		NoteAvg         sql.NullFloat64 `json:"noteAvg"`
 		Pricing         float64         `json:"pricing"`
 		PhoneNumber     string          `json:"phoneNumber"`
+		Radius          float64         `json:"radius"`
+		X               float64         `json:"x"`
+		Y               float64         `json:"y"`
 		RoundedDistance float64         `json:"roundedDistance"`
 	}
 
 	var users []SearchUser
 	for rows.Next() {
 		var user SearchUser
-		err := rows.Scan(&user.FirstName, &user.LastName, &user.ProfilePicture, &user.NoteAvg, &user.Pricing, &user.PhoneNumber, &user.RoundedDistance)
+		err := rows.Scan(&user.FirstName, &user.LastName, &user.ProfilePicture, &user.NoteAvg, &user.Pricing, &user.PhoneNumber, &user.Radius, &user.X, &user.Y, &user.RoundedDistance)
 		if err != nil {
 			fmt.Println("💥 Error scanning the rows in SearchUsers() : ", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -201,6 +207,9 @@ func SearchUsers(c *fiber.Ctx) error {
 			                COALESCE(navg.avg, 0)                   AS NoteAvg,
 			                u.pricing,
 			                u.phonenumber,
+			                COALESCE(u.radius, 0),
+			                COALESCE(u.x, 0),
+			                COALESCE(u.y, 0),
 			                COALESCE(CASE
 			                    WHEN
 			                        (ST_Distance(u.geom, st_transform(
@@ -244,7 +253,7 @@ func SearchUsers(c *fiber.Ctx) error {
 
 		for rows2.Next() {
 			var user SearchUser
-			err := rows2.Scan(&user.FirstName, &user.LastName, &user.ProfilePicture, &user.NoteAvg, &user.Pricing, &user.PhoneNumber, &user.RoundedDistance)
+			err := rows2.Scan(&user.FirstName, &user.LastName, &user.ProfilePicture, &user.NoteAvg, &user.Pricing, &user.PhoneNumber, &user.Radius, &user.X, &user.Y, &user.RoundedDistance)
 			if err != nil {
 				fmt.Println("💥 Error scanning the rows in SearchUsers() : ", err)
 				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
