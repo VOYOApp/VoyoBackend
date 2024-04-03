@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"math/rand"
 	"strconv"
 	"strings"
 )
@@ -54,6 +55,9 @@ func CreateVisit(c *fiber.Ctx) error {
 			"error": "An error has occurred, please try again later.",
 		})
 	}
+
+	// Generate a random codeverification number for the visit
+	vtc.CodeVerification = rand.Intn(999999-100000) + 100000
 
 	// 2) Execute the request
 	_, err = stmt.Exec(c.Locals("user").(*CustomClaims).PhoneNumber, vtc.PhoneNumberVisitor, vtc.CodeVerification, vtc.StartTime, vtc.Price, vtc.Status, vtc.Note, vtc.IdAddressGMap, vtc.IdTypeRealEstate, vtc.X, vtc.Y)
@@ -115,6 +119,11 @@ func CreateVisit(c *fiber.Ctx) error {
 		)
 		if err != nil {
 			fmt.Println("💥 Error executing the SQL statement in CreateCriteria() : ", err)
+			if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+					"error": "The visit already exists.",
+				})
+			}
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "An error has occurred, please try again later.",
 			})
@@ -164,7 +173,7 @@ func CreateVisit(c *fiber.Ctx) error {
 		}
 	}
 
-	return c.Status(fiber.StatusCreated).SendString("Visite créée avec succès")
+	return c.Status(fiber.StatusCreated).SendString("Visit created successfully")
 }
 
 // DeleteVisit supprime une visite de la base de données.
@@ -491,4 +500,71 @@ func UpdateVisit(c *fiber.Ctx) error {
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func GetVisitVerificationCode(c *fiber.Ctx) error {
+	idVisit := c.Query("idVisit")
+
+	if idVisit == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Please provide the ID of the visit",
+		})
+	}
+
+	if !hasAuthorizedVisitAccess(c.Locals("user").(*CustomClaims).PhoneNumber, idVisit) {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized access",
+		})
+	}
+
+	row := db.QueryRow("SELECT codeverification FROM visit WHERE idvisit = $1", idVisit)
+
+	var code int
+	err := row.Scan(&code)
+	if err != nil {
+		fmt.Println("💥 Error scanning the row in GetVisitVerificationCode() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"code": code,
+	})
+}
+
+func CheckVisitVerificationCode(c *fiber.Ctx) error {
+	idVisit := c.Query("idVisit")
+	code := c.Query("code")
+
+	if idVisit == "" || code == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Please provide the ID of the visit and the verification code",
+		})
+	}
+
+	if !hasAuthorizedVisitAccess(c.Locals("user").(*CustomClaims).PhoneNumber, idVisit) {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized access",
+		})
+	}
+
+	row := db.QueryRow("SELECT codeverification FROM visit WHERE idvisit = $1", idVisit)
+
+	var dbCode int
+	err := row.Scan(&dbCode)
+	if err != nil {
+		fmt.Println("💥 Error scanning the row in CheckVisitVerificationCode() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
+	}
+
+	if strconv.Itoa(dbCode) == code {
+		return c.SendStatus(fiber.StatusNoContent)
+	}
+
+	return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+		"error": "The verification code is incorrect",
+	})
 }

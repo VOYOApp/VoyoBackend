@@ -95,6 +95,10 @@ func main() {
 	visit.Delete("/", DeleteVisit) // TODO: To check
 	visit.Get("/homeList", VerifyJWT, GetVisitsList)
 
+	visitCode := visit.Group("/code")
+	visitCode.Get("/", VerifyJWT, GetVisitVerificationCode)
+	visitCode.Post("/", VerifyJWT, CheckVisitVerificationCode)
+
 	// Define routes for "Criteria"
 	criteria := root.Group("/criteria")
 	criteria.Get("/", VerifyJWT, GetCriteria)
