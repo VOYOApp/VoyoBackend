@@ -8,6 +8,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"math/rand"
 	"strconv"
+	"strings"
 )
 
 // CreateUser crée un nouvel utilisateur dans la base de données.
@@ -590,4 +591,57 @@ func GetHomeStats(c *fiber.Ctx) error {
 	}
 
 	return c.SendStatus(fiber.StatusOK)
+}
+
+func SearchUsers(c *fiber.Ctx) error {
+	query := strings.Replace(c.Query("q"), " ", "%", -1)
+
+	// Prepare the request
+	stmt, err := db.Prepare(`SELECT PhoneNumber, FirstName, LastName, Email, IdRole, Biography, ProfilePicture, Pricing, idaddressgmap, Radius, x, y, status, cniback, cnifront FROM "user" WHERE PhoneNumber LIKE $1 OR FirstName LIKE $1 OR LastName LIKE $1 OR Email LIKE $1`)
+	if err != nil {
+		fmt.Println("💥 Error preparing the request in SearchUsers() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
+	}
+
+	defer func(stmt *sql.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			fmt.Println("💥 Error closing the statement in SearchUsers()")
+			return
+		}
+	}(stmt)
+
+	rows, err := stmt.Query("%" + query + "%")
+	if err != nil {
+		fmt.Println("💥 Error querying the database in SearchUsers() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
+	}
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			fmt.Println("💥 Error closing the rows in SearchUsers()")
+			return
+		}
+	}(rows)
+
+	var users []User
+	for rows.Next() {
+		var user User
+		err := rows.Scan(&user.PhoneNumber, &user.FirstName, &user.LastName, &user.Email, &user.IdRole, &user.Biography, &user.ProfilePicture, &user.Pricing, &user.IdAddressGMap, &user.Radius, &user.X, &user.Y, &user.Status, &user.CniBack, &user.CniFront)
+		if err != nil {
+			fmt.Println("💥 Error scanning the rows in SearchUsers() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+		users = append(users, user)
+
+	}
+
+	return c.JSON(users)
 }
