@@ -165,55 +165,57 @@ func UpdateCriteria(c *fiber.Ctx) error {
 
 	placeholderIndex := 1 // Start with placeholder index 1
 
-	if criteria.Criteria != "" {
+	if criteria.Criteria != "" && c.Locals("user").(*CustomClaims).Role == "PROSPECT" {
 		updateQuery += fmt.Sprintf("criteria=$%d, ", placeholderIndex)
 		args = append(args, criteria.Criteria)
 		placeholderIndex++
 	}
 
-	if criteria.CriteriaAnswer != "" {
+	if criteria.CriteriaAnswer != "" && c.Locals("user").(*CustomClaims).Role == "VISITOR" {
 		updateQuery += fmt.Sprintf("criteriaAnswer=$%d, ", placeholderIndex)
 		args = append(args, criteria.CriteriaAnswer)
 		placeholderIndex++
 	}
 
-	// TODO: Investigate because it may not work if the photoRequired is false
-	if criteria.PhotoRequired {
-		updateQuery += fmt.Sprintf("photoRequired=$%d, ", placeholderIndex)
-		args = append(args, criteria.PhotoRequired)
-		placeholderIndex++
-	}
+	//// TODO: Investigate because it may not work if the photoRequired is false
+	//if criteria.PhotoRequired {
+	//	updateQuery += fmt.Sprintf("photoRequired=$%d, ", placeholderIndex)
+	//	args = append(args, criteria.PhotoRequired)
+	//	placeholderIndex++
+	//}
 
-	if criteria.Photo != "" {
+	if criteria.Photo != "" && c.Locals("user").(*CustomClaims).Role == "VISITOR" {
 		updateQuery += fmt.Sprintf("photo=$%d, ", placeholderIndex)
 		args = append(args, criteria.Photo)
 		placeholderIndex++
 	}
 
-	// TODO: Investigate because it may not work if the videoRequired is false
-	if criteria.VideoRequired {
-		updateQuery += fmt.Sprintf("videoRequired=$%d, ", placeholderIndex)
-		args = append(args, criteria.VideoRequired)
-		placeholderIndex++
-	}
+	//// TODO: Investigate because it may not work if the videoRequired is false
+	//if criteria.VideoRequired {
+	//	updateQuery += fmt.Sprintf("videoRequired=$%d, ", placeholderIndex)
+	//	args = append(args, criteria.VideoRequired)
+	//	placeholderIndex++
+	//}
 
-	if criteria.Video != "" {
+	if criteria.Video != "" && c.Locals("user").(*CustomClaims).Role == "VISITOR" {
 		updateQuery += fmt.Sprintf("video=$%d, ", placeholderIndex)
 		args = append(args, criteria.Video)
 		placeholderIndex++
 	}
 
-	if criteria.Reusable {
+	// TODO: Investigate because it may not work if the Reusable is false
+	if criteria.Reusable && c.Locals("user").(*CustomClaims).Role == "PROSPECT" {
 		updateQuery += fmt.Sprintf("reusable=$%d, ", placeholderIndex)
 		args = append(args, criteria.Reusable)
 		placeholderIndex++
 	}
 
-	if criteria.PhoneNumber != "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "You are not allowed to update the phone number",
-		})
-	}
+	// Useless just don't update
+	// if criteria.PhoneNumber != "" {
+	//	return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+	//		"error": "You are not allowed to update the phone number",
+	//	})
+	//}
 
 	// Remove the trailing comma and space
 	updateQuery = updateQuery[:len(updateQuery)-2]

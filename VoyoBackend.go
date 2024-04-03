@@ -81,30 +81,30 @@ func main() {
 	// Define routes for "User"
 	user := root.Group("/user")
 	user.Get("/", VerifyJWT, GetUser) // TODO: To check 1 and add verifyJWT
-	user.Get("/login", LoginUser)     // TODO: To check
-	user.Post("/", CreateUser)        // TODO: To check
-	user.Put("/", UpdateUser)         // TODO: To check
-	user.Delete("/", DeleteUser)      // TODO: To check
+	user.Get("/login", LoginUser)     // TODO: To check & add jwt verification
+	user.Post("/", CreateUser)        // TODO: To check & add jwt verification
+	user.Put("/", UpdateUser)         // TODO: To check & add jwt verification
+	user.Delete("/", DeleteUser)      // TODO: To check & add jwt verification
 	user.Get("/homeStats", VerifyJWT, GetHomeStats)
 
 	// Define routes for "Visit"
-	visit := root.Group("/visit")
-	visit.Get("/", VerifyJWT, GetVisit)
-	visit.Patch("/", VerifyJWT, UpdateVisit)
-	visit.Post("/", VerifyJWT, CreateVisit)
+	visit := root.Group("/visit", VerifyJWT)
+	visit.Get("/", GetVisit)
+	visit.Patch("/", UpdateVisit)
+	visit.Post("/", CreateVisit)
 	visit.Delete("/", DeleteVisit) // TODO: To check
-	visit.Get("/homeList", VerifyJWT, GetVisitsList)
+	visit.Get("/homeList", GetVisitsList)
 
 	visitCode := visit.Group("/code")
-	visitCode.Get("/", VerifyJWT, GetVisitVerificationCode)
-	visitCode.Post("/", VerifyJWT, CheckVisitVerificationCode)
+	visitCode.Get("/", GetVisitVerificationCode)
+	visitCode.Post("/", CheckVisitVerificationCode)
 
 	// Define routes for "Criteria"
-	criteria := root.Group("/criteria")
-	criteria.Get("/", VerifyJWT, GetCriteria)
-	criteria.Post("/", VerifyJWT, CreateCriteria)
-	criteria.Patch("/", VerifyJWT, UpdateCriteria) // TODO: To check 2
-	criteria.Delete("/", DeleteCriteria)           // TODO: To check
+	criteria := root.Group("/criteria", VerifyJWT)
+	criteria.Get("/", GetCriteria)
+	criteria.Post("/", CreateCriteria)
+	criteria.Patch("/", UpdateCriteria)  // TODO:May be okay we'll see when using it in the backen
+	criteria.Delete("/", DeleteCriteria) // TODO: To check
 
 	// Define routes for "linkCriteriaVisit" TODO: maybe will be deleted because a criteria is linked to a visit when creating the visit
 	linkcriteriavisit := root.Group("/linkcriteriavisit")
