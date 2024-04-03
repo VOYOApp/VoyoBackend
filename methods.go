@@ -82,7 +82,7 @@ func getAddressFromGMapsID(googleMapsID string) (googleMapsResponse, error) {
 	return result, nil
 }
 
-func SearchUsers(c *fiber.Ctx) error {
+func Search(c *fiber.Ctx) error {
 	// Get the query parameter
 	x := c.Query("x")
 	y := c.Query("y")
