@@ -42,6 +42,9 @@ type User struct {
 	X              *float64 `json:"x"`
 	Y              *float64 `json:"y"`
 	Geom           *string  `json:"geom"`
+	Status         *string  `json:"status"`
+	CniBack        *string  `json:"cni_back"`
+	CniFront       *string  `json:"cni_front"`
 }
 
 type Duration struct {
