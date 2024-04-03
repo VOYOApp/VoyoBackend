@@ -275,7 +275,13 @@ func GetUser(c *fiber.Ctx) error {
 				"error": "An error has occurred, please try again later.",
 			})
 		}
-		defer stmt.Close()
+		defer func(stmt *sql.Stmt) {
+			err := stmt.Close()
+			if err != nil {
+				fmt.Println("💥 Error closing the statement in GetUser()")
+				return
+			}
+		}(stmt)
 
 		row := stmt.QueryRow(id)
 		err = row.Scan(&user.PhoneNumber, &user.FirstName, &user.LastName, &user.Biography, &user.ProfilePicture, &user.Pricing)
@@ -296,7 +302,13 @@ func GetUser(c *fiber.Ctx) error {
 				"error": "An error has occurred, please try again later.",
 			})
 		}
-		defer stmt.Close()
+		defer func(stmt *sql.Stmt) {
+			err := stmt.Close()
+			if err != nil {
+				fmt.Println("💥 Error closing the statement in GetUser()")
+				return
+			}
+		}(stmt)
 
 		row := stmt.QueryRow(phoneNumber)
 		err = row.Scan(&user.FirstName, &user.LastName, &user.Email, &user.Biography, &user.ProfilePicture, &user.Pricing, &user.Radius, &user.X, &user.Y)
@@ -346,32 +358,6 @@ func GetUser(c *fiber.Ctx) error {
 	//	"error": "Please provide an ID",
 	//})
 }
-
-// Si aucun ID n'est spécifié, on récupère tous les utilisateurs.
-//rows, err := db.Query(`SELECT PhoneNumber, FirstName, LastName, Email, Password, IdRole, Biography, ProfilePicture, Pricing, IdAddressGMap, Radius FROM "user"`)
-//if err != nil {
-//	fmt.Println("💥 Error preparing the request in GetUser() : ", err)
-//	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-//		"error": "An error has occurred, please try again later.",
-//	})
-//}
-//defer rows.Close()
-//
-//var users []User
-//for rows.Next() {
-//	var user User
-//	err := rows.Scan(&user.PhoneNumber, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.IdRole, &user.Biography, &user.ProfilePicture, &user.Pricing, &user.IdAddressGMap, &user.Radius)
-//	if err != nil {
-//		fmt.Println("💥 Error executing the request in GetUser() : ", err)
-//		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-//			"error": "An error has occurred, please try again later.",
-//		})
-//	}
-//	users = append(users, user)
-//}
-
-//return c.JSON(users)
-//}
 
 // UpdateUser met à jour un utilisateur existant dans la base de données.
 func UpdateUser(c *fiber.Ctx) error {
@@ -641,6 +627,41 @@ func SearchUsers(c *fiber.Ctx) error {
 		}
 		users = append(users, user)
 
+	}
+
+	return c.JSON(users)
+}
+
+func UsersToBeValidated(c *fiber.Ctx) error {
+	// Select all users
+	rows, err := db.Query(`SELECT PhoneNumber, FirstName, LastName, Email, IdRole, Biography, ProfilePicture, Pricing, idaddressgmap, Radius, x, y, status, cniback, cnifront FROM "user" WHERE status = 'PENDING_VALIDATION'`)
+	if err != nil {
+		fmt.Println("💥 Error querying the database in UsersToBeValidated() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
+
+	}
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			fmt.Println("💥 Error closing the rows in UsersToBeValidated()")
+			return
+		}
+	}(rows)
+
+	var users []User
+	for rows.Next() {
+		var user User
+		err := rows.Scan(&user.PhoneNumber, &user.FirstName, &user.LastName, &user.Email, &user.IdRole, &user.Biography, &user.ProfilePicture, &user.Pricing, &user.IdAddressGMap, &user.Radius, &user.X, &user.Y, &user.Status, &user.CniBack, &user.CniFront)
+		if err != nil {
+			fmt.Println("💥 Error scanning the rows in UsersToBeValidated() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+		users = append(users, user)
 	}
 
 	return c.JSON(users)

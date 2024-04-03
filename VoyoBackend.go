@@ -87,6 +87,7 @@ func main() {
 	user.Delete("/", DeleteUser)      // TODO: To check & add jwt verification
 	user.Get("/homeStats", VerifyJWT, GetHomeStats)
 	user.Get("/search", VerifyJWT, restrictTo("ADMIN"), SearchUsers)
+	user.Get("/tbv", VerifyJWT, restrictTo("ADMIN"), UsersToBeValidated)
 
 	// Define routes for "Visit"
 	visit := root.Group("/visit", VerifyJWT)
