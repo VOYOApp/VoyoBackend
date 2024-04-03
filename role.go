@@ -12,7 +12,7 @@ func GetRole(c *fiber.Ctx) error {
 	// on récupère uniquement ce rôle spécifique.
 	if id != "" {
 		var r Role
-		stmt, err := db.Prepare("SELECT * FROM role WHERE IdRole = $1")
+		stmt, err := db.Prepare("SELECT idrole, label FROM role WHERE IdRole = $1")
 		if err != nil {
 			return err
 		}
@@ -27,7 +27,7 @@ func GetRole(c *fiber.Ctx) error {
 	}
 
 	// Si aucun ID n'est spécifié, on récupère tous les rôles.
-	rows, err := db.Query("SELECT * FROM role")
+	rows, err := db.Query("SELECT idrole, label FROM role")
 	if err != nil {
 		return err
 	}

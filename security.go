@@ -207,3 +207,15 @@ func hasAuthorizedCriteriaAccess(phoneNumber string, idCriteria string) bool {
 
 	return requestedId == idCriteria
 }
+
+func restrictTo(role ...string) func(*fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
+		claims := c.Locals("user").(*CustomClaims)
+		for _, r := range role {
+			if claims.Role == r {
+				return c.Next()
+			}
+		}
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+}
