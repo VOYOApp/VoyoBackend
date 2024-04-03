@@ -259,8 +259,8 @@ func LoginUser(c *fiber.Ctx) error {
 // GetUser récupère un utilisateur spécifique à partir de son ID, ou tous les utilisateurs s'il n'y a pas d'ID spécifié.
 func GetUser(c *fiber.Ctx) error {
 	id := c.Query("id")
-	phoneNumber := ""
-	//phoneNumber := c.Locals("user").(*CustomClaims).PhoneNumber
+	//phoneNumber := ""
+	phoneNumber := c.Locals("user").(*CustomClaims).PhoneNumber
 	// Si un ID est spécifié dans les paramètres de la requête, on récupère uniquement cet utilisateur spécifique.
 	if id != "" {
 		//TODO Fix bug avec l'id qui est mal formaté ++33612345678 si postman, +33612345678 sur Voyo = problème
