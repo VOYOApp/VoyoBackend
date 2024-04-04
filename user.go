@@ -665,3 +665,33 @@ func UsersToBeValidated(c *fiber.Ctx) error {
 
 	return c.JSON(users)
 }
+
+func GetUserStatus(c *fiber.Ctx) error {
+	phoneNumber := c.Locals("user").(*CustomClaims).PhoneNumber
+
+	stmt, err := db.Prepare(`SELECT status FROM "user" WHERE PhoneNumber = $1`)
+	if err != nil {
+		fmt.Println("💥 Error preparing the request in GetUserStatus() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
+	}
+
+	defer func(stmt *sql.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			fmt.Println("💥 Error closing the statement in GetUserStatus()")
+			return
+		}
+	}(stmt)
+
+	var status string
+	err = stmt.QueryRow(phoneNumber).Scan(&status)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "User not found",
+		})
+	}
+
+	return c.JSON(fiber.Map{"status": status})
+}
