@@ -633,8 +633,7 @@ func SearchUsers(c *fiber.Ctx) error {
 }
 
 func UsersToBeValidated(c *fiber.Ctx) error {
-	// Select all users
-	rows, err := db.Query(`SELECT PhoneNumber, FirstName, LastName, Email, IdRole, Biography, ProfilePicture, Pricing, idaddressgmap, Radius, x, y, status, cniback, cnifront FROM "user" WHERE status = 'PENDING_VALIDATION'`)
+	rows, err := db.Query(`SELECT 																				PhoneNumber, FirstName, LastName, Email, IdRole, Biography, ProfilePicture, Pricing, idaddressgmap, Radius, x, y, status, cniback, cnifront FROM "user" WHERE status = 'PENDING_VALIDATION'`)
 	if err != nil {
 		fmt.Println("💥 Error querying the database in UsersToBeValidated() : ", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
