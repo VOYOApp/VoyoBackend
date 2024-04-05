@@ -65,7 +65,7 @@ func main() {
 	typerealestate.Delete("/", DeleteTypeRealEstate) // TODO: To check
 
 	// Define routes for "Availability"
-	availability := root.Group("/availability")
+	availability := root.Group("/availability", VerifyJWT)
 	availability.Get("/", GetAvailability)       // TODO: To check
 	availability.Post("/", CreateAvailability)   // TODO: To check
 	availability.Put("/", UpdateAvailability)    // TODO: To check
@@ -82,10 +82,10 @@ func main() {
 	user := root.Group("/user")
 	user.Get("/", VerifyJWT, GetUser) // TODO: To check 1 and add verifyJWT
 	user.Get("/status", VerifyJWT, GetUserStatus)
-	user.Get("/login", LoginUser) // TODO: To check & add jwt verification
-	user.Post("/", CreateUser)    // TODO: To check & add jwt verification
-	user.Put("/", UpdateUser)     // TODO: To check & add jwt verification
-	user.Delete("/", DeleteUser)  // TODO: To check & add jwt verification
+	user.Get("/login", LoginUser) // TODO: To check
+	user.Post("/", CreateUser)    // TODO: To check
+	user.Put("/", VerifyJWT, UpdateUser)
+	user.Delete("/", DeleteUser) // TODO: To check & add jwt verification
 	user.Get("/homeStats", VerifyJWT, GetHomeStats)
 	user.Get("/search", VerifyJWT, restrictTo("ADMIN"), SearchUsers)
 	user.Get("/tbv", VerifyJWT, restrictTo("ADMIN"), UsersToBeValidated)

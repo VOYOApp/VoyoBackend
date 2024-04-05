@@ -29,7 +29,7 @@ func CreateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	stmt, err := db.Prepare(`INSERT INTO "user" (PhoneNumber, FirstName, LastName, Email, Password, IdRole, Biography, ProfilePicture, Pricing, IdAddressGMap, Radius, Status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`)
+	stmt, err := db.Prepare(`INSERT INTO "user" (PhoneNumber, FirstName, LastName, Email, Password, IdRole, Biography, ProfilePicture, Pricing, IdAddressGMap, Radius, Status, CniFront, CniBack) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`)
 	if err != nil {
 		fmt.Println("💥 Error preparing the request in CreateUser() : ", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -50,7 +50,7 @@ func CreateUser(c *fiber.Ctx) error {
 		status = "PENDING_VALIDATION"
 	}
 
-	_, err = stmt.Exec(user.PhoneNumber, user.FirstName, user.LastName, user.Email, hashedPassword, user.IdRole, user.Biography, user.ProfilePicture, user.Pricing, user.IdAddressGMap, user.Radius, status)
+	_, err = stmt.Exec(user.PhoneNumber, user.FirstName, user.LastName, user.Email, hashedPassword, user.IdRole, user.Biography, user.ProfilePicture, user.Pricing, user.IdAddressGMap, user.Radius, status, user.CniFront, user.CniBack)
 	if err != nil {
 		fmt.Println("💥 Error executing the request in CreateUser() : ", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -361,8 +361,6 @@ func GetUser(c *fiber.Ctx) error {
 
 // UpdateUser met à jour un utilisateur existant dans la base de données.
 func UpdateUser(c *fiber.Ctx) error {
-	id := c.Query("id")
-
 	var user User
 	if err := c.BodyParser(&user); err != nil {
 		fmt.Println("💥 Error parsing the body in UpdateUser() : ", err)
@@ -371,7 +369,108 @@ func UpdateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	stmt, err := db.Prepare(`UPDATE "user" SET PhoneNumber=$1, FirstName=$2, LastName=$3, Email=$4, Password=$5, IdRole=$6, Biography=$7, ProfilePicture=$8, Pricing=$9, IdAddressGMap=$10, Radius=$11 WHERE PhoneNumber=$12`)
+	user.PhoneNumber = c.Locals("user").(*CustomClaims).PhoneNumber
+
+	var updateQuery string
+	var args []interface{}
+
+	placeholderIndex := 1 // Start with placeholder index 1
+
+	if user.FirstName != "" {
+		updateQuery += fmt.Sprintf(`FirstName=$%d,`, placeholderIndex)
+		args = append(args, user.FirstName)
+		placeholderIndex++
+	}
+
+	if user.LastName != "" {
+		updateQuery += fmt.Sprintf(`LastName=$%d,`, placeholderIndex)
+		args = append(args, user.LastName)
+		placeholderIndex++
+	}
+
+	if user.Email != "" {
+		updateQuery += fmt.Sprintf(`Email=$%d,`, placeholderIndex)
+		args = append(args, user.Email)
+		placeholderIndex++
+	}
+
+	if user.Biography != nil {
+		updateQuery += fmt.Sprintf(`Biography=$%d,`, placeholderIndex)
+		args = append(args, user.Biography)
+		placeholderIndex++
+	}
+
+	if user.ProfilePicture != nil {
+		updateQuery += fmt.Sprintf(`ProfilePicture=$%d,`, placeholderIndex)
+		args = append(args, user.ProfilePicture)
+		placeholderIndex++
+	}
+
+	if user.Pricing != nil {
+		updateQuery += fmt.Sprintf(`Pricing=$%d,`, placeholderIndex)
+		args = append(args, user.Pricing)
+		placeholderIndex++
+	}
+
+	if user.IdAddressGMap != nil {
+		updateQuery += fmt.Sprintf(`IdAddressGMap=$%d,`, placeholderIndex)
+		args = append(args, user.IdAddressGMap)
+		placeholderIndex++
+	}
+
+	if user.Radius != nil {
+		updateQuery += fmt.Sprintf(`Radius=$%d,`, placeholderIndex)
+		args = append(args, user.Radius)
+		placeholderIndex++
+	}
+
+	if user.X != nil {
+		updateQuery += fmt.Sprintf(`X=$%d,`, placeholderIndex)
+		args = append(args, user.X)
+		placeholderIndex++
+	}
+
+	if user.Y != nil {
+		updateQuery += fmt.Sprintf(`Y=$%d,`, placeholderIndex)
+		args = append(args, user.Y)
+		placeholderIndex++
+	}
+
+	if user.CniFront != nil {
+		updateQuery += fmt.Sprintf(`CniFront=$%d,`, placeholderIndex)
+		args = append(args, user.CniFront)
+		placeholderIndex++
+	}
+
+	if user.CniBack != nil {
+		updateQuery += fmt.Sprintf(`CniBack=$%d,`, placeholderIndex)
+		args = append(args, user.CniBack)
+		placeholderIndex++
+	}
+
+	if user.Password != "" {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+		if err != nil {
+			fmt.Println("💥 Error hashing the password in UpdateUser() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+
+		updateQuery += fmt.Sprintf(`Password=$%d, PasswordUpdatedAt=NOW(), `, placeholderIndex)
+		args = append(args, hashedPassword)
+		placeholderIndex++
+	}
+
+	// Remove the last comma
+	updateQuery = updateQuery[:len(updateQuery)-1]
+
+	// Prepare the request
+	stmt, err := db.Prepare(fmt.Sprintf(`
+		UPDATE "user"
+		SET %s
+		WHERE PhoneNumber=$%d
+	`, updateQuery, placeholderIndex))
 	if err != nil {
 		fmt.Println("💥 Error preparing the request in UpdateUser() : ", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -385,9 +484,11 @@ func UpdateUser(c *fiber.Ctx) error {
 			fmt.Println("💥 Error closing the statement in UpdateUser()")
 			return
 		}
+
 	}(stmt)
 
-	_, err = stmt.Exec(user.PhoneNumber, user.FirstName, user.LastName, user.Email, user.Password, user.IdRole, user.Biography, user.ProfilePicture, user.Pricing, user.IdAddressGMap, user.Radius, id)
+	args = append(args, user.PhoneNumber)
+	_, err = stmt.Exec(args...)
 	if err != nil {
 		fmt.Println("💥 Error executing the request in UpdateUser() : ", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -395,7 +496,7 @@ func UpdateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 // DeleteUser supprime un utilisateur de la base de données.
