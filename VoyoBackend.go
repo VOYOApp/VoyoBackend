@@ -106,7 +106,7 @@ func main() {
 	criteria := root.Group("/criteria", VerifyJWT)
 	criteria.Get("/", GetCriteria)
 	criteria.Post("/", CreateCriteria)
-	criteria.Patch("/", UpdateCriteria)  // TODO:May be okay we'll see when using it in the backen
+	criteria.Patch("/", UpdateCriteria)  // TODO:May be okay we'll see when using it in the backend
 	criteria.Delete("/", DeleteCriteria) // TODO: To check
 
 	// Define routes for "linkCriteriaVisit" TODO: maybe will be deleted because a criteria is linked to a visit when creating the visit
