@@ -217,10 +217,13 @@ func GetVisitsList(c *fiber.Ctx) error {
 	visitType := strings.ToUpper(c.Query("type"))
 
 	searchString := "phoneNumber"
+	searchString2 := "phoneNumber"
 	if role == "PROSPECT" {
 		searchString = "PhoneNumberProspect"
+		searchString2 = "PhoneNumberVisitor"
 	} else {
 		searchString = "PhoneNumberVisitor"
+		searchString2 = "PhoneNumberProspect"
 	}
 
 	isNot := ""
@@ -232,10 +235,11 @@ func GetVisitsList(c *fiber.Ctx) error {
 	request := fmt.Sprintf(`
 		SELECT FirstName, UPPER(CONCAT(LEFT(LastName, 1), '.')) AS LastName, visit.idaddressgmap, StartTime, (starttime + duration) AS EndTime, Duration, visit.status, Note, visit.idvisit
 		FROM visit
-		         JOIN public."user" u ON visit.phonenumberprospect = u.phonenumber
+		         JOIN public."user" u ON visit.%s = u.phonenumber
 		         JOIN typerealestate t ON visit.idtyperealestate = t.idtyperealestate
 		WHERE %s = '%s' AND visit.Status %s IN ('PENDING', 'ACCEPTED')
-`, searchString, phoneNumber, isNot)
+		ORDER BY StartTime ASC
+`, searchString2, searchString, phoneNumber, isNot)
 
 	rows, err := db.Query(request)
 	if err != nil {
