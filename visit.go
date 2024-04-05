@@ -296,7 +296,7 @@ func GetVisit(c *fiber.Ctx) error {
 		if hasAuthorizedVisitAccess(c.Locals("user").(*CustomClaims).PhoneNumber, id) {
 			request := fmt.Sprintf(`
 			SELECT idvisit,
-			       u.idaddressgmap,
+			       v.idaddressgmap,
 			       Date(StartTime)                                                       AS Date,
 			       TO_CHAR(StartTime, 'HH24hMI')                                         AS StartTime,
 			       TO_CHAR(starttime + tr.duration, 'HH24hMI')                           AS EndTime,
