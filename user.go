@@ -695,3 +695,147 @@ func GetUserStatus(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{"status": status})
 }
+
+func AdminUpdateUser(c *fiber.Ctx) error {
+	phoneNumber := c.Query("id")
+
+	var user User
+	if err := c.BodyParser(&user); err != nil {
+		fmt.Println("💥 Error parsing the body in AdminUpdateUser() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
+	}
+
+	var updateQuery string
+	var args []interface{}
+
+	placeholderIndex := 1 // Start with placeholder index 1
+
+	if user.PhoneNumber != "" {
+		updateQuery += fmt.Sprintf(`PhoneNumber=$%d, `, placeholderIndex)
+		args = append(args, user.PhoneNumber)
+		placeholderIndex++
+	}
+
+	if user.FirstName != "" {
+		updateQuery += fmt.Sprintf(`FirstName=$%d, `, placeholderIndex)
+		args = append(args, user.FirstName)
+		placeholderIndex++
+	}
+
+	if user.LastName != "" {
+		updateQuery += fmt.Sprintf(`LastName=$%d, `, placeholderIndex)
+		args = append(args, user.LastName)
+		placeholderIndex++
+	}
+
+	if user.Email != "" {
+		updateQuery += fmt.Sprintf(`Email=$%d, `, placeholderIndex)
+		args = append(args, user.Email)
+		placeholderIndex++
+	}
+
+	if user.Password != "" {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+		if err != nil {
+			fmt.Println("💥 Error hashing the password in AdminUpdateUser() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+		updateQuery += fmt.Sprintf(`Password=$%d, `, placeholderIndex)
+		args = append(args, hashedPassword)
+		placeholderIndex++
+	}
+
+	if user.IdRole != 0 {
+		updateQuery += fmt.Sprintf(`IdRole=$%d, `, placeholderIndex)
+		args = append(args, user.IdRole)
+		placeholderIndex++
+	}
+
+	if user.Biography != nil {
+		updateQuery += fmt.Sprintf(`Biography=$%d, `, placeholderIndex)
+		args = append(args, user.Biography)
+		placeholderIndex++
+	}
+
+	if user.ProfilePicture != nil {
+		updateQuery += fmt.Sprintf(`ProfilePicture=$%d, `, placeholderIndex)
+		args = append(args, user.ProfilePicture)
+		placeholderIndex++
+	}
+
+	if user.Pricing != nil {
+		updateQuery += fmt.Sprintf(`Pricing=$%d, `, placeholderIndex)
+		args = append(args, user.Pricing)
+		placeholderIndex++
+	}
+
+	if user.IdAddressGMap != nil {
+		updateQuery += fmt.Sprintf(`IdAddressGMap=$%d, `, placeholderIndex)
+		args = append(args, user.IdAddressGMap)
+		placeholderIndex++
+	}
+
+	if user.Radius != nil {
+		updateQuery += fmt.Sprintf(`Radius=$%d, `, placeholderIndex)
+		args = append(args, user.Radius)
+		placeholderIndex++
+	}
+
+	if user.X != nil {
+		updateQuery += fmt.Sprintf(`X=$%d, `, placeholderIndex)
+		args = append(args, user.X)
+		placeholderIndex++
+	}
+
+	if user.Y != nil {
+		updateQuery += fmt.Sprintf(`Y=$%d, `, placeholderIndex)
+		args = append(args, user.Y)
+		placeholderIndex++
+	}
+
+	if user.Status != nil {
+		if *user.Status == "VALIDATED" {
+			updateQuery += fmt.Sprintf(`Status=$%d, CniFront='', CniBack='', `, placeholderIndex)
+		} else {
+			updateQuery += fmt.Sprintf(`Status=$%d, `, placeholderIndex)
+		}
+		args = append(args, user.Status)
+		placeholderIndex++
+	}
+
+	// Remove the last comma and space
+	updateQuery = strings.TrimSuffix(updateQuery, ", ")
+
+	// Prepare the request
+	stmt, err := db.Prepare(fmt.Sprintf(`UPDATE "user" SET %s WHERE PhoneNumber=$%d`, updateQuery, placeholderIndex))
+	if err != nil {
+		fmt.Println("💥 Error preparing the request in AdminUpdateUser() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
+	}
+
+	defer func(stmt *sql.Stmt) {
+		err := stmt.Close()
+		if err != nil {
+			fmt.Println("💥 Error closing the statement in AdminUpdateUser()")
+			return
+		}
+	}(stmt)
+
+	args = append(args, phoneNumber)
+	_, err = stmt.Exec(args...)
+	if err != nil {
+		fmt.Println("💥 Error executing the request in AdminUpdateUser() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
+	}
+
+	return c.SendStatus(fiber.StatusOK)
+
+}
