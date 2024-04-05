@@ -72,7 +72,7 @@ func main() {
 	availability.Delete("/", DeleteAvailability) // TODO: To check
 
 	// Define routes for "Role"
-	role := root.Group("/role")
+	role := root.Group("/role", VerifyJWT, restrictTo("ADMIN"))
 	role.Get("/", GetRole)       // TODO: To check
 	role.Post("/", CreateRole)   // TODO: To check
 	role.Put("/", UpdateRole)    // TODO: To check
@@ -89,6 +89,7 @@ func main() {
 	user.Get("/homeStats", VerifyJWT, GetHomeStats)
 	user.Get("/search", VerifyJWT, restrictTo("ADMIN"), SearchUsers)
 	user.Get("/tbv", VerifyJWT, restrictTo("ADMIN"), UsersToBeValidated)
+	user.Patch("/update", VerifyJWT, restrictTo("ADMIN"), AdminUpdateUser)
 
 	// Define routes for "Visit"
 	visit := root.Group("/visit", VerifyJWT)
