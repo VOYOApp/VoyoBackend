@@ -58,7 +58,7 @@ func CreateVisit(c *fiber.Ctx) error {
 
 	// Generate a random codeverification number for the visit
 	vtc.CodeVerification = rand.Intn(999999-100000) + 100000
-
+	vtc.Status = "PENDING"
 	// 2) Execute the request
 	_, err = stmt.Exec(c.Locals("user").(*CustomClaims).PhoneNumber, vtc.PhoneNumberVisitor, vtc.CodeVerification, vtc.StartTime, vtc.Price, vtc.Status, vtc.Note, vtc.IdAddressGMap, vtc.IdTypeRealEstate, vtc.X, vtc.Y)
 	if err != nil {
