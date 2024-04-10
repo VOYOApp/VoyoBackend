@@ -147,6 +147,7 @@ type visitDetails struct {
 			CriteriaSent  bool    `json:"criteriaSent"`
 			Price         string  `json:"price"`
 			Note          float32 `json:"note"`
+			Code          int     `json:"code"`
 		} `json:"details"`
 		IDVisit   int        `json:"id"`
 		Criterias []Criteria `json:"criterias"`

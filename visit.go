@@ -313,9 +313,10 @@ func GetVisit(c *fiber.Ctx) error {
 			       COALESCE(navg.avg, 0)                                                              AS NoteAvg,
 			       price,
 			       note,
+			       v.codeverification,
 			       CASE WHEN v.status NOT IN ('DONE', 'ACCEPTED') THEN FALSE ELSE TRUE END AS VisitAccepted,
 			       CASE
-			           WHEN (SELECT COUNT(idVisit) FROM public.linkcriteriavisit WHERE idVisit = 135) > 0 THEN TRUE
+			           WHEN (SELECT COUNT(idVisit) FROM public.linkcriteriavisit WHERE idVisit = %[1]s) > 0 THEN TRUE
 			           ELSE FALSE END                                                    AS CriteriaSent
 			FROM visit v
 			         JOIN public.typerealestate tr ON v.idtyperealestate = tr.idtyperealestate
@@ -335,7 +336,7 @@ func GetVisit(c *fiber.Ctx) error {
 			row := db.QueryRow(request)
 
 			var visit visitDetails
-			err := row.Scan(&visit.Visit.IDVisit, &visit.Visit.Address.IdAddressGmap, &visit.Visit.Details.Date, &visit.Visit.Details.StartTime, &visit.Visit.Details.EndTime, &visit.Visit.Details.Duration, &visit.Visit.Details.Status, &visit.Visitor.FirstName, &visit.Visitor.LastName, &visit.Visitor.ProfilePicture, &visit.Visitor.VisitCount, &visit.Visitor.NoteAVG, &visit.Visit.Details.Price, &visit.Visit.Details.Note, &visit.Visit.Details.VisitAccepted, &visit.Visit.Details.CriteriaSent)
+			err := row.Scan(&visit.Visit.IDVisit, &visit.Visit.Address.IdAddressGmap, &visit.Visit.Details.Date, &visit.Visit.Details.StartTime, &visit.Visit.Details.EndTime, &visit.Visit.Details.Duration, &visit.Visit.Details.Status, &visit.Visitor.FirstName, &visit.Visitor.LastName, &visit.Visitor.ProfilePicture, &visit.Visitor.VisitCount, &visit.Visitor.NoteAVG, &visit.Visit.Details.Price, &visit.Visit.Details.Note, &visit.Visit.Details.Code, &visit.Visit.Details.VisitAccepted, &visit.Visit.Details.CriteriaSent)
 			if err != nil {
 				fmt.Println("💥 Error scanning the row in GetVisit() : ", err)
 				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -344,6 +345,10 @@ func GetVisit(c *fiber.Ctx) error {
 			}
 
 			visit.Visit.Address.googleMapsResponse, _ = getAddressFromGMapsID(visit.Visit.Address.IdAddressGmap)
+
+			if c.Locals("user").(*CustomClaims).Role == "VISITOR" {
+				visit.Visit.Details.Code = 0
+			}
 
 			// Select all criterias for the visit
 			rows, err := db.Query("SELECT criteria.idcriteria, criteria.criteria, criteriaanswer, photo, video, photorequired, videorequired FROM public.criteria join public.linkcriteriavisit on criteria.idcriteria = linkcriteriavisit.idcriteria where idvisit = $1", id)
@@ -515,7 +520,7 @@ func GetVisitVerificationCode(c *fiber.Ctx) error {
 		})
 	}
 
-	if !hasAuthorizedVisitAccess(c.Locals("user").(*CustomClaims).PhoneNumber, idVisit) {
+	if !hasAuthorizedVisitAccess(c.Locals("user").(*CustomClaims).PhoneNumber, idVisit) || c.Locals("user").(*CustomClaims).Role == "VISITOR" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized access",
 		})

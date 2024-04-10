@@ -67,7 +67,8 @@ func VerifyJWT(c *fiber.Ctx) error {
 			fmt.Println("Invalid token")
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token"})
 		}
-		fmt.Println("Bad request")
+
+		fmt.Println("💥 Error parsing the token in VerifyJWT() : ", err)
 
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Bad request"})
 	}
