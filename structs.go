@@ -71,7 +71,7 @@ type Availability struct {
 	IdAvailability int       `json:"id"`
 	PhoneNumber    string    `json:"phone_number"`
 	Availability   time.Time `json:"availability"`
-	Duration       Duration  `json:"duration"`
+	Duration       string    `json:"duration"`
 	Repeat         string    `json:"repeat"`
 }
 

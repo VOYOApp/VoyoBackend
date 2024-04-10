@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"time"
 )
 
 // CreateAvailability crée une nouvelle disponibilité dans la base de données.
@@ -19,9 +20,15 @@ func CreateAvailability(c *fiber.Ctx) error {
 
 	for _, a := range availability {
 		// Convert duration to seconds
-		durationInSeconds := int(a.Duration.Seconds())
+		// Chaîne de caractères représentant l'heure
+		heureString := "04:29:00"
 
-		a.PhoneNumber = c.Locals("user").(User).PhoneNumber
+		// Convertir la chaîne en type de données Time
+		heureTime, err := time.Parse("15:04:05", heureString)
+		if err != nil {
+		}
+
+		a.PhoneNumber = c.Locals("user").(*CustomClaims).PhoneNumber
 
 		stmt, err := db.Prepare("INSERT INTO availability (PhoneNumber, Availability, Duration, Repeat) VALUES ($1, $2, $3::interval, $4)")
 		if err != nil {
@@ -39,7 +46,7 @@ func CreateAvailability(c *fiber.Ctx) error {
 			}
 		}(stmt)
 
-		_, err = stmt.Exec(a.PhoneNumber, a.Availability, durationInSeconds, a.Repeat)
+		_, err = stmt.Exec(a.PhoneNumber, a.Availability, heureTime.Format("15:04:05"), a.Repeat)
 		if err != nil {
 			fmt.Println("💥 Error executing the SQL statement in CreateAvailability() : ", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
