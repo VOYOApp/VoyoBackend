@@ -346,7 +346,7 @@ func GetVisit(c *fiber.Ctx) error {
 
 			visit.Visit.Address.googleMapsResponse, _ = getAddressFromGMapsID(visit.Visit.Address.IdAddressGmap)
 
-			if c.Locals("user").(*CustomClaims).Role == "VISITOR" {
+			if c.Locals("user").(*CustomClaims).Role == "VISITOR" && visit.Visit.Details.Status != "DONE" {
 				visit.Visit.Details.Code = 0
 			}
 
@@ -575,5 +575,30 @@ func CheckVisitVerificationCode(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 		"error": "The verification code is incorrect",
+	})
+}
+
+func GetUserEmailByPhoneNumber(c *fiber.Ctx) error {
+	phoneNumber := c.Query("phoneNumber")
+
+	if phoneNumber == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Please provide the phone number",
+		})
+	}
+
+	row := db.QueryRow("SELECT email FROM public.user WHERE phonenumber = $1", phoneNumber)
+
+	var email string
+	err := row.Scan(&email)
+	if err != nil {
+		fmt.Println("💥 Error scanning the row in GetUserEmailByPhoneNumber() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"email": email,
 	})
 }
