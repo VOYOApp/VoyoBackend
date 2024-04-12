@@ -91,6 +91,7 @@ func main() {
 	user.Get("/tbv", VerifyJWT, restrictTo("ADMIN"), UsersToBeValidated)
 	user.Patch("/update", VerifyJWT, restrictTo("ADMIN"), AdminUpdateUser)
 	user.Get("/email", VerifyJWT, GetUserEmailByPhoneNumber) // SUPER UNSAFE!!!! SHOULD BE REMOVED LATER
+	user.Get("/all", VerifyJWT, restrictTo("ADMIN"), GetAllUsers)
 
 	// Define routes for "Visit"
 	visit := root.Group("/visit", VerifyJWT)

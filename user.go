@@ -946,3 +946,38 @@ func AdminUpdateUser(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 
 }
+
+func GetAllUsers(c *fiber.Ctx) error {
+	// Select all users
+	rows, err := db.Query(`SELECT PhoneNumber, FirstName, LastName, Email, Biography, ProfilePicture, Pricing, Radius, x, y FROM "user"`)
+	if err != nil {
+		fmt.Println("💥 Error querying the database in GetUser() : ", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "An error has occurred, please try again later.",
+		})
+
+	}
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			fmt.Println("💥 Error closing the rows in GetUser()")
+			return
+		}
+	}(rows)
+
+	var users []User
+	for rows.Next() {
+		var user User
+		err := rows.Scan(&user.PhoneNumber, &user.FirstName, &user.LastName, &user.Email, &user.Biography, &user.ProfilePicture, &user.Pricing, &user.Radius, &user.X, &user.Y)
+		if err != nil {
+			fmt.Println("💥 Error scanning the rows in GetUser() : ", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "An error has occurred, please try again later.",
+			})
+		}
+		users = append(users, user)
+	}
+
+	return c.JSON(users)
+}
