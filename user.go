@@ -424,6 +424,12 @@ func UpdateUser(c *fiber.Ctx) error {
 		placeholderIndex++
 	}
 
+	if user.IdRole != 0 {
+		updateQuery += fmt.Sprintf(`IdRole=$%d,`, placeholderIndex)
+		args = append(args, user.IdRole)
+		placeholderIndex++
+	}
+
 	if user.X != nil {
 		updateQuery += fmt.Sprintf(`X=$%d,`, placeholderIndex)
 		args = append(args, user.X)
